@@ -1,123 +1,116 @@
+import random
 import tensorflow as tf
-import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.layers import Dense, GlobalAveragePooling2D, Dropout
+from tensorflow.keras.models import Model
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
+from sklearn.utils.class_weight import compute_class_weight
+import json
 
-#loading data
-CSV_PATH = "/content/drive/MyDrive/your_folder/all_images.csv"
-IMG_SIZE = 224
-BATCH_SIZE = 32 
+random.seed(42)
+np.random.seed(42)
+tf.random.set_seed(42)
 
-df = pd.read_csv(CSV_PATH)
+IMG_SIZE = (224, 224)
+BATCH_SIZE = 32
+EPOCHS = 15
+TRAIN_DIR = r"D:\Datasets\balanced_dataset\train"
+VAL_DIR = r"D:\Datasets\balanced_dataset\val"
 
-filepaths = df["image_path"].values
-labels = df["label"].values
-
-# Encode labels
-label_encoder = LabelEncoder()
-labels_encoded = label_encoder.fit_transform(labels)
-
-NUM_CLASSES = len(label_encoder.classes_)
-print("Classes:", label_encoder.classes_)
-print("Number of classes:", NUM_CLASSES)
-
-# Split data into train and validation sets
-train_paths, val_paths, train_labels, val_labels = train_test_split(
-    filepaths,
-    labels_encoded,
-    test_size=0.2,
-    random_state=42,
-    stratify=labels_encoded
+train_datagen = ImageDataGenerator(
+    preprocessing_function=preprocess_input,
+    rotation_range=20,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    zoom_range=0.2,
+    horizontal_flip=True,
+    brightness_range=[0.8, 1.2],
+    fill_mode='nearest'
 )
 
-# preprocessing
-from keras.applications.mobilenet_v2 import preprocess_input
+val_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
 
-def preprocess_image(path, label):
-    image = tf.io.read_file(path)
-    image = tf.image.decode_jpeg(image, channels=3)
-    image = tf.image.resize(image, (IMG_SIZE, IMG_SIZE))
-    image = tf.cast(image, tf.float32)
-    image = preprocess_input(image)
-    return image, label
-
-from keras import layers
-
-data_augmentation = tf.keras.Sequential([
-  layers.RandomFlip("horizontal_and_vertical"),
-  layers.RandomRotation(0.2),
-  layers.RandomZoom(0.2),
-  layers.RandomContrast(0.1),
-])
-
-# data pipeline
-train_dataset = tf.data.Dataset.from_tensor_slices((train_paths, train_labels))
-train_dataset = train_dataset.map(preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
-train_dataset = train_dataset.shuffle(1000).batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
-
-val_dataset = tf.data.Dataset.from_tensor_slices((val_paths, val_labels))
-val_dataset = val_dataset.map(preprocess_image, num_parallel_calls=tf.data.AUTOTUNE)
-val_dataset = val_dataset.batch(BATCH_SIZE).prefetch(tf.data.AUTOTUNE)
-
-# Building the model
-from keras.applications import MobileNetV2
-from keras import layers, models
-from keras.optimizers import Adam
-
-base_model = MobileNetV2(
-    weights="imagenet",
-    include_top=False,
-    input_shape=(IMG_SIZE, IMG_SIZE, 3)
+train_generator = train_datagen.flow_from_directory(
+    TRAIN_DIR,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=True,
+    seed=42  
 )
 
-base_model.trainable = False  # Freeze initially
+val_generator = val_datagen.flow_from_directory(
+    VAL_DIR,
+    target_size=IMG_SIZE,
+    batch_size=BATCH_SIZE,
+    class_mode='categorical',
+    shuffle=False
+)
 
-model = models.Sequential([
-    base_model,
-    layers.GlobalAveragePooling2D(),
-    layers.BatchNormalization(),
-    layers.Dropout(0.5),
-    layers.Dense(256, activation='relu'),
-    layers.Dropout(0.4),
-    layers.Dense(NUM_CLASSES, activation='softmax')
-])
+class_weights = compute_class_weight(
+    class_weight='balanced',
+    classes=np.unique(train_generator.classes),
+    y=train_generator.classes
+)
+class_weights = dict(enumerate(class_weights))
+
+base_model = MobileNetV2(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+base_model.trainable = False
+
+x = base_model.output
+x = GlobalAveragePooling2D()(x)
+x = Dropout(0.3)(x)
+outputs = Dense(train_generator.num_classes, activation='softmax')(x)
+model = Model(inputs=base_model.input, outputs=outputs)
 
 model.compile(
-    optimizer=Adam(learning_rate=0.001),
-    loss="sparse_categorical_crossentropy",
-    metrics=["accuracy"]
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-3),
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
 )
 
-model.summary()
+callbacks = [
+    EarlyStopping(patience=5, restore_best_weights=True),
+    ReduceLROnPlateau(patience=3, factor=0.3, verbose=1),
+    ModelCheckpoint("best_mobilenet_model.keras", save_best_only=True)
+]
 
-# callbacks
-from keras.callbacks import EarlyStopping, ReduceLROnPlateau, ModelCheckpoint
-
-early_stop = EarlyStopping(
-    monitor='val_loss',
-    patience=5,
-    restore_best_weights=True
-)
-
-reduce_lr = ReduceLROnPlateau(
-    monitor='val_loss',
-    factor=0.3,
-    patience=3
-)
-
-checkpoint = ModelCheckpoint(
-    "best_mobilenet_model.keras",
-    save_best_only=True
-)
-
-# train the model
+# Phase 1: Train head only
 history = model.fit(
-    train_dataset,
-    validation_data=val_dataset,
-    epochs=15,
-    callbacks=[early_stop, reduce_lr, checkpoint]
+    train_generator,
+    validation_data=val_generator,
+    epochs=EPOCHS,
+    class_weight=class_weights,
+    callbacks=callbacks
 )
 
-# save the final model
-model.save("mobilenet_plant_model.h5")
+# Phase 2: Fine-tuning
+base_model.trainable = True
+for layer in base_model.layers[:-30]:
+    layer.trainable = False
+
+
+model.compile(
+    optimizer=tf.keras.optimizers.Adam(learning_rate=1e-5),
+    loss='categorical_crossentropy',
+    metrics=['accuracy']
+)
+
+history_finetune = model.fit(
+    train_generator,
+    validation_data=val_generator,
+    epochs=10,
+    class_weight=class_weights,
+    callbacks=callbacks
+)
+
+model.save("mobilenet_plant_model.keras")
+
+labels = {str(v): k for k, v in train_generator.class_indices.items()}
+with open(r"D:\fastapi practice\Backend\class_labels.json", 'w') as f:
+    json.dump(labels, f, indent=4)
+
+print("Done! Total classes:", len(labels))

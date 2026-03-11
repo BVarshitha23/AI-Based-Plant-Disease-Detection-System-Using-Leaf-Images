@@ -7,7 +7,7 @@ from sklearn.metrics import classification_report
 
 
 TEST_DIR = r"D:\Datasets\balanced_dataset\test"
-MODEL_PATH = r"D:\fastapi practice\Backend\mobilenet_plant_model_finetuned.keras"
+MODEL_PATH = r"D:\Datasets\Output\mobilenetv2_final.keras"
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
 

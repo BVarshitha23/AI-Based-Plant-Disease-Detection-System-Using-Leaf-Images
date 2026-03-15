@@ -1,62 +1,91 @@
-import os
 import numpy as np
-import tensorflow as tf
-from keras.applications.mobilenet_v2 import preprocess_input
+import json
+import cv2
+import matplotlib.pyplot as plt
+from tensorflow.keras.models import load_model
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 
-IMAGE_TO_TEST = r"C:/Users/Varshitha/Downloads/KT-2019080504.jpg"
-MODEL_PATH = 'D:/plant disease detection/mobilenet_plant_model.keras'
 
-CLASS_NAMES = [
-    'apple_scab', 'bacterial_spot', 'black_rot', 'cedar_apple_rust', 
-    'cercospora_leaf_spot gray_leaf_spot', 'common_rust_', 'early_blight', 
-    'healthy', 'late_blight', 'northern_leaf_blight', 'tomato__target_spot', 
-    'tomato__tomato_mosaic_virus', 'tomato__tomato_yellowleaf__curl_virus', 
-    'tomato_bacterial_spot', 'tomato_early_blight', 'tomato_healthy', 
-    'tomato_late_blight', 'tomato_leaf_mold', 'tomato_septoria_leaf_spot', 
-    'tomato_spider_mites_two_spotted_spider_mite'
-]
+#  CONFIG
+MODEL_PATH           = r"D:\Custom_dataset\Output\mobilenetv2_unfreeze50_best.keras"
+JSON_PATH            = r"D:\Custom_dataset\Output\class_labels.json"
+IMAGE_PATH           = r"C:\Users\Varshitha\Downloads\New folder\Apple_healthy.jpg"
+IMG_SIZE             = (224, 224)
+TTA_STEPS            = 5
 
-# BUILD SKELETON & LOAD WEIGHTS 
-def load_fixed_model():
-    base_model = tf.keras.applications.MobileNetV2(weights=None, include_top=False, input_shape=(224, 224, 3))
-    model = tf.keras.Sequential([
-        base_model,
-        tf.keras.layers.GlobalAveragePooling2D(),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dense(256, activation='relu'),
-        tf.keras.layers.Dropout(0.5),
-        tf.keras.layers.Dense(20, activation='softmax')
-    ])
-    model.load_weights(MODEL_PATH)
-    return model
+#LOAD MODEL 
+model = load_model(MODEL_PATH)
 
-#  3. PREDICTION FUNCTION
-def predict_single_image(img_path):
-    print(f"Analyzing: {os.path.basename(img_path)}...")
-    
-    # Load and Preprocess
-    img = tf.io.read_file(img_path)
-    img = tf.image.decode_jpeg(img, channels=3)
-    img = tf.image.resize(img, [224, 224], method='bilinear', antialias=True)
-    img = preprocess_input(img) 
-    img = np.expand_dims(img, axis=0) # Add batch dimension (1, 224, 224, 3)
+with open(JSON_PATH, 'r') as f:
+    class_indices = json.load(f)
 
-    # Predict
-    preds = model.predict(img, verbose=0)
-    score = np.max(preds[0])
-    class_idx = np.argmax(preds[0])
-    
-    return CLASS_NAMES[class_idx], score
+print(f" {len(class_indices)} classes loaded\n")
 
-#  RUN IT 
-if __name__ == "__main__":
-    if not os.path.exists(IMAGE_TO_TEST):
-        print(f"ERROR: Cannot find the image at {IMAGE_TO_TEST}")
-    else:
-        model = load_fixed_model()
-        label, confidence = predict_single_image(IMAGE_TO_TEST)
-        
-        print("-" * 30)
-        print(f"PREDICTION: {label.upper()}")
-        print(f"CONFIDENCE: {confidence * 100:.2f}%")
-        print("-" * 30)
+#  HELPERS
+def format_label(label: str) -> str:
+    return label.replace("___", " - ").replace("_", " ").title()
+
+def load_raw(img_path: str) -> np.ndarray:
+    img = load_img(img_path, target_size=IMG_SIZE)
+    return img_to_array(img)
+
+def augment_and_preprocess(raw_arr: np.ndarray) -> np.ndarray:
+    img = raw_arr.copy()
+
+    # Soft brightness jitter
+    img += np.random.uniform(-10, 10)
+    img  = np.clip(img, 0, 255)
+
+    # Horizontal flip only
+    if np.random.rand() > 0.5:
+        img = np.fliplr(img)
+
+    img = np.expand_dims(img, axis=0)
+    img = preprocess_input(img)
+    return img
+
+#  PREDICT WITH TTA
+def predict(img_path: str) -> np.ndarray:
+    raw_arr = load_raw(img_path)
+
+    base_input = preprocess_input(np.expand_dims(raw_arr.copy(), axis=0))
+    base_pred  = model.predict(base_input, verbose=0)[0]
+
+    tta_preds = [base_pred]
+    for step in range(TTA_STEPS - 1):
+        aug_pred = model.predict(augment_and_preprocess(raw_arr), verbose=0)[0]
+        tta_preds.append(aug_pred)
+        print(f"   TTA step {step + 2}/{TTA_STEPS} done...", end="\r")
+
+    print(" " * 40, end="\r")
+    return np.mean(tta_preds, axis=0)
+
+#  RUN PREDICTION
+img_name = IMAGE_PATH.replace("\\", "/").split("/")[-1]
+print(f"  Image   : {img_name}")
+print("   Predicting...\n")
+
+predictions = predict(IMAGE_PATH)
+
+best_idx   = str(np.argmax(predictions))
+best_label = format_label(class_indices.get(best_idx, "Unknown"))
+best_conf  = float(np.max(predictions))
+
+#  RESULT
+print("─" * 58)
+print(f" PREDICTED DISEASE  : {best_label}")
+print(f" CONFIDENCE         : {best_conf * 100:.2f}%")
+print("─" * 58)
+
+#  SHOW IMAGE WITH RESULT
+img   = load_img(IMAGE_PATH, target_size=IMG_SIZE)
+plt.figure(figsize=(5, 5))
+plt.imshow(img)
+plt.axis('off')
+plt.title(
+    f"Predicted: {best_label}\nConfidence: {best_conf * 100:.1f}%",
+    fontsize=10, color='green', fontweight='bold', pad=12
+)
+plt.tight_layout()
+plt.show()

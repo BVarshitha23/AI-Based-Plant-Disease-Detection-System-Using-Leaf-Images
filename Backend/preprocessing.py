@@ -1,62 +1,90 @@
-import pandas as pd
-import numpy as np
-import cv2
 import os
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
+#Config 
+DATASET_PATH = r"D:\Datasets\balanced_dataset"
+IMG_SIZE     = (224, 224)
+BATCH_SIZE   = 32
+SEED         = 42
 
-IMG_SIZE = 224
-CSV_PATH = "D:/plant disease detection/CSV_Files/all_images.csv"
+TRAIN_PATH = os.path.join(DATASET_PATH, "train")
+VAL_PATH   = os.path.join(DATASET_PATH, "val")
+TEST_PATH  = os.path.join(DATASET_PATH, "test")
 
-df = pd.read_csv(CSV_PATH)
-df = df[:1000]
+# Generators 
+# Train — augmentation + MobileNetV2 preprocessing
+train_datagen = ImageDataGenerator(
+    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input,
+    horizontal_flip=True,
+    rotation_range=15,
+    brightness_range=[0.7, 1.3],
+    zoom_range=0.10,
+    width_shift_range=0.10,
+    height_shift_range=0.10,
+    fill_mode="nearest"
+)
 
-print("Total samples:", len(df))
+# Val & Test — only MobileNetV2 preprocessing, no augmentation
+val_test_datagen = ImageDataGenerator(
+    preprocessing_function=tf.keras.applications.mobilenet_v2.preprocess_input
+)
 
-images = []
-labels = []
+#Data Loaders 
+def get_generators():
+    train_generator = train_datagen.flow_from_directory(
+        TRAIN_PATH,
+        target_size=IMG_SIZE,
+        batch_size=BATCH_SIZE,
+        class_mode="categorical",
+        color_mode="rgb",
+        shuffle=True,
+        seed=SEED
+    )
 
-for index, row in df.iterrows():
-    img_path = row["filepath"]
-    label = row["label"]
+    val_generator = val_test_datagen.flow_from_directory(
+        VAL_PATH,
+        target_size=IMG_SIZE,
+        batch_size=BATCH_SIZE,
+        class_mode="categorical",
+        color_mode="rgb",
+        shuffle=False
+    )
 
-    # Read image
-    img = cv2.imread(img_path)
+    test_generator = val_test_datagen.flow_from_directory(
+        TEST_PATH,
+        target_size=IMG_SIZE,
+        batch_size=BATCH_SIZE,
+        class_mode="categorical",
+        color_mode="rgb",
+        shuffle=False
+    )
 
-    if img is None:
-        print("Image not found:", img_path)
-        continue
+    return train_generator, val_generator, test_generator
 
-    # Convert BGR to RGB
-    img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+#Verify 
+if __name__ == "__main__":
+    train_gen, val_gen, test_gen = get_generators()
 
-    # Resize
-    img = cv2.resize(img, (IMG_SIZE, IMG_SIZE))
+    print(f"\n{'='*52}")
+    print(f"  PREPROCESSING SUMMARY")
+    print(f"{'='*52}")
+    print(f"  Image size     : {IMG_SIZE}")
+    print(f"  Batch size     : {BATCH_SIZE} (optimized for CPU)")
+    print(f"  Train images   : {train_gen.samples}")
+    print(f"  Val images     : {val_gen.samples}")
+    print(f"  Test images    : {test_gen.samples}")
+    print(f"  Total images   : {train_gen.samples + val_gen.samples + test_gen.samples}")
+    print(f"  Num classes    : {train_gen.num_classes}")
+    print(f"\n  Class → Label mapping:")
+    for emotion, idx in sorted(train_gen.class_indices.items(), key=lambda x: x[1]):
+        print(f"    {idx} → {emotion}")
 
-    # Normalize
-    img = img / 255.0
-
-    images.append(img)
-    labels.append(label)
-
-# Convert to numpy array
-X = np.array(images)
-y = np.array(labels)
-
-print("Image shape:", X.shape)
-
-# Encode Labels
-label_encoder = LabelEncoder()
-y_encoded = label_encoder.fit_transform(y)
-
-print("classes:", label_encoder.classes_)
-print("Encoded labels:", y_encoded[:10])
-
-print("Total Classes:", len(np.unique(y_encoded)))
-
-#train test split
-x_train, x_test, y_train, y_test = train_test_split(X, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded)
-
-print(x_train.shape, y_train.shape)
-print(x_test.shape, y_test.shape)
+    # check one batch
+    imgs, labels = next(train_gen)
+    print(f"\n  Sample batch")
+    print(f"  Image tensor shape : {imgs.shape}")       
+    print(f"  Labels shape       : {labels.shape}")     
+    print(f"  Pixel range        : [{imgs.min():.2f}, {imgs.max():.2f}]")  # [-1, 1]
+    print(f"{'='*52}\n")

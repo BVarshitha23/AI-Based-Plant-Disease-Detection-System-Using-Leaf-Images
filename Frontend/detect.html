@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Detect — LeafSense</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/detect.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap" rel="stylesheet"/>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+</head>
+<body>
+
+<nav class="navbar">
+    <a href="index.html" class="logo">
+      <div class="logo-icon">
+        <i data-lucide="leaf" style="width:20px;height:20px;color:#fff;"></i>
+      </div>
+      <span class="logo-text">LeafSense</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="detect.html">Detect</a>
+      <a href="index.html#how">How it Works</a>
+    </div>
+    <a href="detect.html" class="btn-primary">
+      <i data-lucide="scan-line" style="width:15px;height:15px;"></i> Scan Now
+    </a>
+  </nav>
+
+  <!-- CAMERA MODAL -->
+  <div class="cam-overlay" id="camOverlay">
+    <div class="cam-modal">
+      <div class="cam-header">
+        <span class="cam-title">
+          <i data-lucide="camera" style="width:16px;height:16px;margin-right:6px;vertical-align:middle;"></i>
+          Take a Leaf Photo
+        </span>
+        <button class="cam-close" onclick="closeCamera()">
+          <i data-lucide="x" style="width:18px;height:18px;"></i>
+        </button>
+      </div>
+      <div class="cam-body">
+        <video id="camVideo" class="cam-video" autoplay playsinline muted></video>
+        <canvas id="camCanvas" style="display:none;"></canvas>
+        <div class="cam-tip">
+          <i data-lucide="info" style="width:13px;height:13px;margin-right:4px;vertical-align:middle;"></i>
+          Hold the leaf steady in good light, then click Capture
+        </div>
+      </div>
+      <div class="cam-footer">
+        <button class="cam-switch-btn" onclick="switchCamera()" id="camSwitchBtn">
+          <i data-lucide="flip-horizontal" style="width:16px;height:16px;"></i>
+          Flip Camera
+        </button>
+        <button class="cam-capture-btn" onclick="capturePhoto()">
+          <i data-lucide="aperture" style="width:20px;height:20px;"></i>
+          Capture
+        </button>
+        <button class="cam-cancel-btn" onclick="closeCamera()">
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPLOAD SECTION  -->
+  <section class="upload-section">
+    <div class="upload-container">
+
+      <!-- Hidden file input — gallery -->
+      <input type="file" id="fileInput" accept="image/*"
+             style="display:none" onchange="handleFileInput(this)"/>
+
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="dropZone"
+        ondragover="event.preventDefault(); this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="handleDrop(event)">
+
+        <div id="dzContent">
+          <div class="dz-icon-wrap">
+            <i data-lucide="image-up" style="width:52px;height:52px;color:var(--leaf);"></i>
+          </div>
+          <div class="dz-title">Upload or capture a leaf photo</div>
+          <div class="dz-sub">Drag & drop here, or use one of the options below<br>
+            <span>JPG, PNG supported · Max 10MB</span>
+          </div>
+          <div class="upload-options">
+            <button class="upload-opt-btn"
+              onclick="event.stopPropagation(); document.getElementById('fileInput').click()">
+              <i data-lucide="folder-open" style="width:18px;height:18px;"></i>
+              <span>Choose from Gallery</span>
+            </button>
+            <button class="upload-opt-btn camera-btn"
+              onclick="event.stopPropagation(); openCamera()">
+              <i data-lucide="camera" style="width:18px;height:18px;"></i>
+              <span>Take a Photo</span>
+            </button>
+          </div>
+        </div>
+
+        <img id="previewImg" class="preview-img" alt="Leaf preview"/>
+      </div>
+
+      <!-- Scan Button -->
+      <div id="scanBtnWrap">
+        <button class="scan-btn" id="scanBtn" disabled onclick="startScan()">
+          <i data-lucide="scan-line" style="width:18px;height:18px;"></i>
+          Upload a photo to scan
+        </button>
+      </div>
+
+      <!-- Analyzing State -->
+      <div class="analyzing-box" id="analyzingBox">
+        <div class="spinner"></div>
+        <div class="ana-title">Analysing your leaf...</div>
+        <div class="ana-step" id="anaStep">Checking image quality</div>
+        <div class="prog-track">
+          <div class="prog-fill" id="progFill"></div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- RESULT SECTION  -->
+  <section class="result-section" id="resultSection">
+
+    <div class="unknown-bar" id="unknownBar">
+      <i data-lucide="alert-triangle" style="width:18px;height:18px;flex-shrink:0;"></i>
+      <div>Low confidence result. Please consult your nearest KVK or call <strong>1800-180-1551</strong>.</div>
+    </div>
+
+    <div class="result-banner">
+      <div class="rb-crop-icon" id="rbIconWrap">
+        <i data-lucide="leaf" id="rbIcon" style="width:44px;height:44px;color:#fff;"></i>
+      </div>
+      <div class="rb-info">
+        <h2 id="rbDisease">—</h2>
+        <p id="rbDetail">Detected just now</p>
+      </div>
+      <div class="rb-conf">
+        <div class="rb-conf-num" id="rbConf">—</div>
+        <div class="rb-conf-lbl">Confidence</div>
+      </div>
+    </div>
+
+    <div class="result-grid">
+
+      <div class="res-card">
+        <div class="res-card-title">
+          <i data-lucide="activity" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
+          How bad is it?
+        </div>
+        <div class="sev-num" id="sevNum">—</div>
+        <div class="sev-sub">of leaf is infected</div>
+        <div class="sev-badge" id="sevBadge">—</div>
+        <div class="sev-bar-bg">
+          <div class="sev-bar-fill" id="sevFill"></div>
+        </div>
+        <div class="sev-stages">
+          <div class="sev-stage" id="s0">Early<br>0–25%</div>
+          <div class="sev-stage" id="s1">Moderate<br>25–50%</div>
+          <div class="sev-stage" id="s2">Severe<br>50–75%</div>
+          <div class="sev-stage" id="s3">Critical<br>75%+</div>
+        </div>
+      </div>
+
+      <div class="res-card">
+        <div class="res-card-title">
+          <i data-lucide="pill" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
+          What to do now?
+        </div>
+        <div class="treat-list" id="treatList"></div>
+      </div>
+
+      <div class="res-card lang-card">
+        <div class="res-card-title">
+          <i data-lucide="languages" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
+          Result in your language
+        </div>
+        <div class="lang-row">
+          <button class="lang-btn active" onclick="setLang(this,'en')">English</button>
+          <button class="lang-btn" onclick="setLang(this,'hi')">हिंदी</button>
+          <button class="lang-btn" onclick="setLang(this,'te')">తెలుగు</button>
+          <button class="lang-btn" onclick="setLang(this,'ta')">தமிழ்</button>
+          <button class="lang-btn" onclick="setLang(this,'kn')">ಕನ್ನಡ</button>
+        </div>
+        <div class="trans-box" id="transBox"></div>
+        <button class="play-btn" id="playBtn" onclick="speakResult()">
+          <i data-lucide="volume-2" style="width:16px;height:16px;"></i>
+          Listen Now
+        </button>
+      </div>
+
+    </div>
+
+    <div class="scan-again-row">
+      <button class="scan-again-btn" onclick="resetScan()">
+        <i data-lucide="refresh-cw" style="width:15px;height:15px;"></i>
+        Scan Another Leaf
+      </button>
+    </div>
+
+  </section>
+
+  <script src="./Script/detect.js"></script>
+  <script src="./Script/Cam.js"></script>
+  <script>lucide.createIcons();</script>
+</body>
+</html>

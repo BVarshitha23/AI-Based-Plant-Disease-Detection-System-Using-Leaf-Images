@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LeafSense — Plant Disease Detection</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="static/CSS/style.css" />
+    <link rel="stylesheet" href="static/CSS/Home.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="Script/auth.js"></script>
+  </head>
+  <body>
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <div class="logo">
+        <div class="logo-icon">
+          <i
+            data-lucide="leaf"
+            style="width: 20px; height: 20px; color: #fff"
+          ></i>
+        </div>
+        <span class="logo-text">LeafSense</span>
+      </div>
+      <div class="nav-links">
+        <a href="index.html"style="color:var(--leaf)">Home</a>
+        <a href="detect.html">Detect</a>
+        <a href="history.html">History</a>
+        <a href="profile.html">Profile</a>
+        <!-- <a href="#how">How it Works</a> -->
+        <div class="nav-auth" id="navAuth">
+      </div>
+        <!-- Logout link will be added here if logged in -->
+      </div>
+      <!-- Logout button will be added here if logged in -->
+      <!-- <a href="detect.html" class="btn-primary">
+      <i data-lucide="scan-line" style="width:15px;height:15px;"></i> Scan Now
+    </a> -->
+    </nav>
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+    <h3 id="homeGreeting" style="margin-bottom:10px;color:var(--leaf)"></h3>
+      <div class="hero-tag">
+        <i data-lucide="wheat" style="width: 14px; height: 14px"></i>
+        For Farmers
+      </div>
+      <h1>Is Your Crop <em>Healthy</em><br />or Diseased?</h1>
+      <p>
+        Just take a photo of any leaf. Our AI instantly detects the disease,
+        tells you how severe it is, and gives you the exact treatment — in your
+        own language.
+      </p>
+      <div class="hero-btns">
+        <a href="detect.html" class="btn-big">
+          <i data-lucide="camera" style="width: 17px; height: 17px"></i> Scan a
+          Leaf
+        </a>
+        <!-- <a href="#how" class="btn-s  ec">How it Works</a> -->
+      </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how-section" id="how">
+      <h2 class="sec-title">How it works — 3 simple steps</h2>
+      <div class="steps-row">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-icon-wrap">
+            <i
+              data-lucide="image-up"
+              style="width: 30px; height: 30px; color: var(--leaf)"
+            ></i>
+          </div>
+          <h4>Upload a Photo</h4>
+          <p>
+            Drag & drop or click to upload a clear photo of the affected leaf
+          </p>
+        </div>
+        <div class="step-arrow">
+          <i
+            data-lucide="arrow-right"
+            style="width: 22px; height: 22px; color: var(--border)"
+          ></i>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-icon-wrap">
+            <i
+              data-lucide="brain-circuit"
+              style="width: 30px; height: 30px; color: var(--leaf)"
+            ></i>
+          </div>
+          <h4>AI Analyses</h4>
+          <p>Our model detects the disease and calculates severity instantly</p>
+        </div>
+        <div class="step-arrow">
+          <i
+            data-lucide="arrow-right"
+            style="width: 22px; height: 22px; color: var(--border)"
+          ></i>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-icon-wrap">
+            <i
+              data-lucide="clipboard-check"
+              style="width: 30px; height: 30px; color: var(--leaf)"
+            ></i>
+          </div>
+          <h4>Get Result</h4>
+          <p>
+            See treatment steps and listen to the result in your own language
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div class="logo">
+        <div class="logo-icon">
+          <i
+            data-lucide="leaf"
+            style="width: 20px; height: 20px; color: #fff"
+          ></i>
+        </div>
+        <span class="logo-text">LeafSense</span>
+      </div>
+      <p>AI-Based Plant Disease Detection · Built for Indian Farmers</p>
+      <p class="helpline">Kisan Helpline: <strong>1800-180-1551</strong></p>
+    </footer>
+
+    <script src="./Scripts/home.js"></script>
+    <script>
+      lucide.createIcons();
+    </script>
+    <script>
+      if (Session.isLoggedIn()) {
+        const navAuth = document.getElementById("navAuth");
+        navAuth.innerHTML =
+          '<a href="#" onclick="logout(); return false;" class="nav-link">Logout</a>';
+      } else {
+        window.location.href = "login.html";
+      }
+
+      function logout() {
+        Session.logout();
+        showToast("success", "Logged out successfully.");
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 700);
+      }
+    </script>
+  </body>
+</html>

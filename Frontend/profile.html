@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LeafSense - Profile</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="static/CSS/style.css" />
+    <link rel="stylesheet" href="static/CSS/profile.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="Script/auth.js"></script>
+    <script>
+      Session.requireAuth();
+    </script>
+  </head>
+  <body>
+    <nav class="navbar">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">
+          <i
+            data-lucide="leaf"
+            style="width: 20px; height: 20px; color: #fff"
+          ></i>
+        </div>
+        <span class="logo-text">LeafSense</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="detect.html">Detect</a>
+        <a href="history.html">History</a>
+        <a href="profile.html" style="color:var(--leaf)">Profile</a>
+        <!-- <div class="nav-auth" id="navAuth"></div> -->
+      </div>
+      </div>
+    </nav>
+
+    <section class="profile-section">
+      <div class="profile-shell">
+        <div class="profile-hero">
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar">
+              <i data-lucide="user-round" style="width: 46px; height: 46px"></i>
+            </div>
+          </div>
+
+          <div class="profile-hero-copy">
+            <div class="profile-kicker">My Profile</div>
+            <h1 id="profileName">Loading...</h1>
+            <p id="profileEmail">Checking your account details</p>
+          </div>
+
+          <!-- <div class="profile-status">
+            <i data-lucide="shield-check" style="width: 16px; height: 16px"></i>
+            JWT Secured
+          </div> -->
+        </div>
+
+        <div class="profile-grid">
+          <div class="profile-card">
+            <div class="profile-card-title">Account Details</div>
+
+            <div class="detail-list">
+              <div class="detail-row">
+                <span class="detail-label">Username</span>
+                <span class="detail-value" id="detailUsername">-</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Email</span>
+                <span class="detail-value" id="detailEmail">-</span>
+              </div>
+              <div class="detail-row">
+                <span class="detail-label">Member Since</span>
+                <span class="detail-value" id="detailCreatedAt">-</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="profile-card">
+            <div class="profile-card-title">Session</div>
+            <p class="profile-copy">
+              Your account is using a JWT token.
+              <!-- with a 1 day expiry.  -->
+              <!-- No auto refresh is enabled right now. -->
+            </p>
+
+            <button class="profile-logout-btn" id="logoutBtn" type="button">
+              <i data-lucide="log-out" style="width: 18px; height: 18px"></i>
+              Logout
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="site-footer">
+      <div class="logo">
+        <div class="logo-icon">
+          <i
+            data-lucide="leaf"
+            style="width: 20px; height: 20px; color: #fff"
+          ></i>
+        </div>
+        <span class="logo-text">LeafSense</span>
+      </div>
+      <p>AI-Based Plant Disease Detection - Built for Indian Farmers</p>
+      <p class="helpline">Kisan Helpline: <strong>1800-180-1551</strong></p>
+    </footer>
+
+    <script src="Scripts/profile.js"></script>
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

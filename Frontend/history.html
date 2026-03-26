@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LeafSense - Detect History</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="static/CSS/style.css" />
+    <link rel="stylesheet" href="static/CSS/history.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  </head>
+  <body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">
+          <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
+        </div>
+        <span class="logo-text">LeafSense</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="detect.html">Detect</a>
+        <a href="history.html" style="color:var(--leaf)">History</a>
+        <a href="profile.html">Profile</a>
+        <div class="nav-auth" id="navAuth"></div>
+      </div>
+    </nav>
+
+    <!-- MAIN PAGE -->
+    <div class="history-page">
+
+      <!-- Header -->
+      <div class="history-header">
+        <div class="history-title-block">
+          <h1>Scan History</h1>
+          <p id="headerSub">Loading your previous scans…</p>
+        </div>
+        <div class="history-actions">
+          <button class="btn-back" onclick="window.location.href='detect.html'">
+            <i data-lucide="scan-line" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>
+            New Scan
+          </button>
+          <button class="btn-primary" id="exportBtn" onclick="exportCSV()">
+            <i data-lucide="download" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>
+            Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="stats-row" id="statsRow">
+        <div class="stat-card">
+          <div class="stat-icon green"><i data-lucide="activity" style="width:20px;height:20px;"></i></div>
+          <div class="stat-info">
+            <div class="stat-number" id="statTotal">—</div>
+            <div class="stat-desc">Total Scans</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon green"><i data-lucide="check-circle" style="width:20px;height:20px;"></i></div>
+          <div class="stat-info">
+            <div class="stat-number" id="statHealthy">—</div>
+            <div class="stat-desc">Healthy Plants</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon amber"><i data-lucide="alert-triangle" style="width:20px;height:20px;"></i></div>
+          <div class="stat-info">
+            <div class="stat-number" id="statDiseased">—</div>
+            <div class="stat-desc">Diseased Plants</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon blue"><i data-lucide="bar-chart-2" style="width:20px;height:20px;"></i></div>
+          <div class="stat-info">
+            <div class="stat-number" id="statAvgConf">—</div>
+            <div class="stat-desc">Avg Confidence</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="search-wrap">
+          <i data-lucide="search" style="width:15px;height:15px;" class="search-icon"></i>
+          <input type="text" id="searchInput" placeholder="Search by disease name…" oninput="applyFilters()" />
+        </div>
+        <select class="filter-select" id="stageFilter" onchange="applyFilters()">
+          <option value="">All Stages</option>
+          <option value="Healthy">Healthy</option>
+          <option value="Early">Early</option>
+          <option value="Moderate">Moderate</option>
+          <option value="Severe">Severe</option>
+          <option value="Critical">Critical</option>
+        </select>
+        <select class="filter-select" id="sortFilter" onchange="applyFilters()">
+          <option value="newest">Newest First</option>
+          <option value="oldest">Oldest First</option>
+          <option value="conf_desc">Highest Confidence</option>
+          <option value="sev_desc">Highest Severity</option>
+        </select>
+        <span class="filter-count" id="filterCount"></span>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Disease / Class</th>
+              <th>Confidence</th>
+              <th>Severity</th>
+              <th>Stage</th>
+              <th>Urgency</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="historyTbody">
+            <tr>
+              <td colspan="8" style="text-align:center;padding:40px 20px;">
+                <div class="spinner" style="width:32px;height:32px;margin:0 auto;border-width:3px;border-color:var(--border);border-top-color:var(--leaf);"></div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="pagination" id="pagination" style="display:none;"></div>
+      </div>
+
+    </div>
+
+    <!-- Detail Modal -->
+    <div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3>Scan Details</h3>
+          <button class="modal-close" onclick="document.getElementById('detailModal').classList.remove('open')">
+            <i data-lucide="x" style="width:16px;height:16px;"></i>
+          </button>
+        </div>
+        <div class="modal-body" id="modalBody"></div>
+      </div>
+    </div>
+
+    <script>lucide.createIcons();</script>
+    <script src="Scripts/auth.js"></script>
+    <script src="Scripts/history.js"></script>
+    <script>
+    if (Session.isLoggedIn()) {
+        const navAuth = document.getElementById("navAuth");
+        navAuth.innerHTML =
+          '<a href="#" onclick="logout(); return false;" class="nav-link">Logout</a>';
+      } else {
+        window.location.href = "login.html";
+      }
+
+      function logout() {
+        Session.logout();
+        showToast("success", "Logged out successfully.");
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 700);
+      }
+      </script>
+  </body>
+</html>

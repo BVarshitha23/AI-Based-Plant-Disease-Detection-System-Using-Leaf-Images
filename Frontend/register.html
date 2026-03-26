@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LeafSense - Register</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="CSS/style.css" />
+    <link rel="stylesheet" href="CSS/register.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  </head>
+  <body>
+
+    <div class="auth-page">
+
+      <!-- ── LEFT PANEL ── -->
+      <div class="auth-panel">
+        <div class="auth-panel-orb orb1"></div>
+        <div class="auth-panel-orb orb2"></div>
+        <div class="auth-panel-orb orb3"></div>
+
+        <div class="panel-logo">
+          <div class="panel-logo-icon">
+            <i data-lucide="leaf" style="width:24px;height:24px;color:#fff"></i>
+          </div>
+          <span class="panel-logo-text">LeafSense</span>
+        </div>
+
+        <div class="panel-features">
+          <div class="feature-item">
+            <div class="feature-icon">
+              <i data-lucide="history" style="width:18px;height:18px;color:#fff"></i>
+            </div>
+            <div class="feature-text">
+              <h4>Full Scan History</h4>
+              <p>Every diagnosis saved — filter, search, and export anytime.</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">
+              <i data-lucide="shield-check" style="width:18px;height:18px;color:#fff"></i>
+            </div>
+            <div class="feature-text">
+              <h4>Secure & Private</h4>
+              <p>Your data is encrypted and never shared with third parties.</p>
+            </div>
+          </div>
+          <div class="feature-item">
+            <div class="feature-icon">
+              <i data-lucide="zap" style="width:18px;height:18px;color:#fff"></i>
+            </div>
+            <div class="feature-text">
+              <h4>Instant Results</h4>
+              <p>AI-powered detection with severity and treatment advice in &lt;2s.</p>
+            </div>
+          </div>
+        </div>
+
+        <p class="panel-tagline">Start protecting your crops<br><em>for free, today.</em></p>
+      </div>
+
+      <!-- ── RIGHT PANEL — FORM ── -->
+      <div class="auth-form-panel">
+        <a href="index.html" class="auth-back-link">
+          <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+          Back to Home
+        </a>
+
+        <h1 class="auth-heading">Create your account</h1>
+        <p class="auth-subheading">Save your scan history and track crop health over time.</p>
+
+        <!-- Error banner -->
+        <div class="auth-error" id="authError">
+          <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0"></i>
+          <span id="authErrorMsg">Something went wrong. Please try again.</span>
+        </div>
+
+        <form class="auth-form" id="registerForm" onsubmit="handleRegister(event)">
+
+          <!-- Full name -->
+          <div class="form-group">
+            <label class="form-label" for="name">Full name</label>
+            <div class="input-icon-wrap">
+              <input
+                type="text" id="name" class="form-input"
+                placeholder="Your full name"
+                required autocomplete="name"
+              />
+              <i data-lucide="user" style="width:17px;height:17px;" class="input-icon"></i>
+            </div>
+            <span class="field-error" id="nameError">Name must be at least 2 characters.</span>
+          </div>
+
+          <!-- Email -->
+          <div class="form-group">
+            <label class="form-label" for="email">Email address</label>
+            <div class="input-icon-wrap">
+              <input
+                type="email" id="email" class="form-input"
+                placeholder="you@example.com"
+                required autocomplete="email"
+              />
+              <i data-lucide="mail" style="width:17px;height:17px;" class="input-icon"></i>
+            </div>
+            <span class="field-error" id="emailError">Please enter a valid email.</span>
+          </div>
+
+          <!-- Password -->
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-icon-wrap input-wrap">
+              <input
+                type="password" id="password" class="form-input"
+                placeholder="Min. 8 characters"
+                required autocomplete="new-password"
+                oninput="checkStrength(this.value)"
+              />
+              <i data-lucide="lock" style="width:17px;height:17px;" class="input-icon"></i>
+              <button type="button" class="pw-toggle" onclick="togglePw('password', this)" tabindex="-1">
+                <i data-lucide="eye" style="width:16px;height:16px"></i>
+              </button>
+            </div>
+            <div class="pw-strength">
+              <div class="pw-strength-bar">
+                <div class="pw-strength-fill" id="pwStrengthFill"></div>
+              </div>
+              <div class="pw-strength-label" id="pwStrengthLabel"></div>
+            </div>
+            <span class="field-error" id="pwError">Password must be at least 8 characters.</span>
+          </div>
+
+          <!-- Confirm password -->
+          <div class="form-group">
+            <label class="form-label" for="confirm">Confirm password</label>
+            <div class="input-icon-wrap input-wrap">
+              <input
+                type="password" id="confirm" class="form-input"
+                placeholder="Re-enter your password"
+                required autocomplete="new-password"
+              />
+              <i data-lucide="lock" style="width:17px;height:17px;" class="input-icon"></i>
+              <button type="button" class="pw-toggle" onclick="togglePw('confirm', this)" tabindex="-1">
+                <i data-lucide="eye" style="width:16px;height:16px"></i>
+              </button>
+            </div>
+            <span class="field-error" id="confirmError">Passwords do not match.</span>
+          </div>
+
+          <button type="submit" class="btn-auth" id="registerBtn">
+            <i data-lucide="user-plus" style="width:18px;height:18px"></i>
+            Create Account
+          </button>
+        </form>
+
+        <div class="auth-footer">
+          Already have an account? <a href="login.html">Sign in</a>
+        </div>
+      </div>
+
+    </div>
+
+    <script>lucide.createIcons();</script>
+    <script src="Scripts/auth.js"></script>
+    <script src="Scripts/register.js"></script>
+  </body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LeafSense - Login</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="CSS/style.css" />
+    <link rel="stylesheet" href="CSS/login.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  </head>
+  <body>
+    <div class="auth-page">
+
+      <!-- LEFT PANEL -->
+      <div class="auth-panel">
+        <div class="auth-panel-orb orb1"></div>
+        <div class="auth-panel-orb orb2"></div>
+        <div class="auth-panel-orb orb3"></div>
+
+        <div class="panel-logo">
+          <div class="panel-logo-icon">
+            <i data-lucide="leaf" style="width:24px;height:24px;color:#fff"></i>
+          </div>
+          <span class="panel-logo-text">LeafSense</span>
+        </div>
+
+        <div class="panel-leaf-art">
+          <div class="leaf-circle c1"></div>
+          <div class="leaf-circle c2"></div>
+          <div class="leaf-circle c3">
+            <i data-lucide="scan-line" style="width:40px;height:40px;color:rgba(255,255,255,0.8)"></i>
+          </div>
+        </div>
+
+        <div class="panel-content">
+          <h2 class="panel-tagline">Detect. Diagnose.<br><em>Protect your plants.</em></h2>
+          <p class="panel-sub">AI-powered plant disease detection with instant results and actionable treatment advice.</p>
+
+          <div class="panel-stats">
+            <div class="stat-item">
+              <span class="stat-value">23</span>
+              <span class="stat-label">Diseases</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">95%</span>
+              <span class="stat-label">Accuracy</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value">&lt;2s</span>
+              <span class="stat-label">Analysis</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PANEL — FORM -->
+      <div class="auth-form-panel">
+        <a href="index.html" class="auth-back-link">
+          <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
+          Back to Home
+        </a>
+
+        <h1 class="auth-heading">Welcome back</h1>
+        <p class="auth-subheading">Sign in to access your scan history.</p>
+
+        <!-- Error banner -->
+        <div class="auth-error" id="authError" style="margin-bottom:16px;">
+          <i data-lucide="alert-circle" style="width:16px;height:16px;flex-shrink:0"></i>
+          <span id="authErrorMsg">Invalid email or password.</span>
+        </div>
+
+        <form class="auth-form" id="loginForm" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label class="form-label" for="username">Email address</label>
+            <div class="input-icon-wrap">
+              <input
+                type="email"
+                id="username"
+                class="form-input"
+                placeholder="you@example.com"
+                required
+                autocomplete="email"
+              />
+              <i data-lucide="mail" style="width:17px;height:17px;" class="input-icon"></i>
+            </div>
+            <span class="field-error" id="usernameError">Please enter a valid email.</span>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <div class="input-icon-wrap input-wrap">
+              <input
+                type="password"
+                id="password"
+                class="form-input"
+                placeholder="Enter your password"
+                required
+                autocomplete="current-password"
+              />
+              <i data-lucide="lock" style="width:17px;height:17px;" class="input-icon"></i>
+              <button
+                type="button"
+                class="pw-toggle"
+                onclick="togglePw('password', this)"
+                tabindex="-1"
+              >
+                <i data-lucide="eye" style="width:16px;height:16px"></i>
+              </button>
+            </div>
+            <span class="field-error" id="pwError">Password is required.</span>
+          </div>
+
+          <button type="submit" class="btn-auth" id="loginBtn">
+            <i data-lucide="log-in" style="width:18px;height:18px"></i>
+            Sign In
+          </button>
+        </form>
+
+        <div class="auth-footer" style="margin-top:28px;">
+          Don't have an account? <a href="register.html">Create one free</a>
+        </div>
+      </div>
+
+    </div>
+
+    <script>lucide.createIcons();</script>
+    <script src="Scripts/auth.js"></script>
+    <script src="Scripts/login.js"></script>
+  </body>
+</html>

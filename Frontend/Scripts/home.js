@@ -1,3 +1,22 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const user = Session.getUser();
+
+  if (user) {
+    const el = document.getElementById('homeGreeting');
+
+    if (el) {
+      const hour = new Date().getHours();
+
+      let greeting = "Hello";
+      if (hour < 12) greeting = "Good Morning";
+      else if (hour < 17) greeting = "Good Afternoon";
+      else greeting = "Good Evening";
+
+      el.textContent = `${greeting}, ${user.username} 👋`;
+    }
+  }
+});
+
 // Smooth scroll for anchor links
 document.querySelectorAll('a[href^="#"]').forEach(link => {
   link.addEventListener('click', e => {

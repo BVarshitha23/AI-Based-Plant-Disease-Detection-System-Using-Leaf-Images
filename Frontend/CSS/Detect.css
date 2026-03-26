@@ -3,11 +3,13 @@
   padding: 36px;
   display: flex;
   justify-content: center;
+  width: 30rem;
+  margin: 0 auto;
 }
 
 .upload-container {
   width: 100%;
-  max-width: 640px;
+  max-width: 700px;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -91,6 +93,7 @@
   border-radius: 19px;
   display: none;
 }
+
 
 /*  Scan Button  */
 .scan-btn {

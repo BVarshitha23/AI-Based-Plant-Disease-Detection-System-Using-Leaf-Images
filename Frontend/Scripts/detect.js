@@ -1,3 +1,11 @@
+document.addEventListener("DOMContentLoaded", () => {
+  // Protect page
+  if (!Session.requireAuth()) return;
+
+  // Render navbar
+  Session.renderProtectedNav();
+});
+
 // FastAPI URL
 // FastAPI runs at: uvicorn app:app --host 0.0.0.0 --port 8000
 const API_URL = '/predict';
@@ -243,6 +251,17 @@ const STEPS = [
 ];
 
 async function startScan() {
+  //  Ensure user logged in
+  const token = Session.getToken();
+
+  console.log("TOKEN:", token); 
+  
+  if (!token) {
+    alert("Please login first");
+    window.location.href = "login.html";
+    return;
+  }
+
   if (!selectedFile) return;
 
   document.getElementById('scanBtnWrap').style.display = 'none';
@@ -265,8 +284,11 @@ async function startScan() {
     const formData = new FormData();
     formData.append('file', selectedFile);  
 
-    const response = await fetch(API_URL, {
+    const response = await fetch("/predict", {
       method: 'POST',
+      headers: {
+    ...Session.authHeaders(), 
+     },
       body: formData
     });
 

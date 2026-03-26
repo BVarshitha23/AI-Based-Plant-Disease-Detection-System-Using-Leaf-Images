@@ -78,12 +78,14 @@ body {
 
 .nav-links {
   display: flex;
+  align-items: center;
   gap: 30px;
 }
 
 .nav-links a {
   font-size: 14px;
   font-weight: 700;
+  margin-top: 3px;
   color: var(--text-mid);
   text-decoration: none;
   transition: color 0.2s;
@@ -162,4 +164,41 @@ body {
   color: var(--white);
   font-size: 13px;
   margin-top: 5px;
+}
+
+/* Toast Notifications */
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  border-radius: var(--radius-sm);
+  color: var(--white);
+  font-weight: 600;
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(100px);
+  transition: all 0.3s ease;
+  z-index: 1000;
+  box-shadow: var(--shadow);
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-success {
+  background: var(--leaf);
+}
+
+.toast-error {
+  background: var(--red);
+}
+
+.toast i {
+  flex-shrink: 0;
 }

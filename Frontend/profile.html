@@ -19,24 +19,38 @@
   </head>
   <body>
     <nav class="navbar">
-      <a href="index.html" class="logo">
-        <div class="logo-icon">
-          <i
-            data-lucide="leaf"
-            style="width: 20px; height: 20px; color: #fff"
-          ></i>
-        </div>
-        <span class="logo-text">LeafSense</span>
-      </a>
-      <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="detect.html">Detect</a>
-        <a href="history.html">History</a>
-        <a href="profile.html" style="color:var(--leaf)">Profile</a>
-        <!-- <div class="nav-auth" id="navAuth"></div> -->
-      </div>
-      </div>
-    </nav>
+  <a href="index.html" class="logo">
+    <div class="logo-icon">
+      <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
+    </div>
+    <span class="logo-text">LeafSense</span>
+  </a>
+
+  <!-- Desktop nav links -->
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="detect.html">Detect</a>
+    <a href="history.html">History</a>
+    <!-- <a href="profile.html">Profile</a> -->
+  </div>
+
+  <!-- Desktop right: profile / login -->
+  <div class="nav-right" id="navRight"></div>
+
+  <!-- Hamburger (mobile) -->
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- Mobile drawer -->
+  <div class="mobile-nav" id="mobileNav">
+    <a href="index.html">Home</a>
+    <a href="detect.html">Detect</a>
+    <a href="history.html">History</a>
+    <a href="profile.html">Profile</a>
+    <div id="mobileNavAuth"></div>
+  </div>
+</nav>
 
     <section class="profile-section">
       <div class="profile-shell">
@@ -110,9 +124,11 @@
       <p class="helpline">Kisan Helpline: <strong>1800-180-1551</strong></p>
     </footer>
 
-    <script src="Scripts/profile.js"></script>
+    <script src="Script/profile.js"></script>
+    <script src="Script/navbar.js"></script>
     <script>
       lucide.createIcons();
+      initNavbar('profile');
     </script>
   </body>
 </html>

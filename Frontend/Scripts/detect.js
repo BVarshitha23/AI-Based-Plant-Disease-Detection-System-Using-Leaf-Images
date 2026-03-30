@@ -1,9 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   // Protect page
   if (!Session.requireAuth()) return;
-
-  // Render navbar
-  Session.renderProtectedNav();
 });
 
 // FastAPI URL
@@ -251,17 +248,6 @@ const STEPS = [
 ];
 
 async function startScan() {
-  //  Ensure user logged in
-  const token = Session.getToken();
-
-  console.log("TOKEN:", token); 
-  
-  if (!token) {
-    alert("Please login first");
-    window.location.href = "login.html";
-    return;
-  }
-
   if (!selectedFile) return;
 
   document.getElementById('scanBtnWrap').style.display = 'none';
@@ -284,11 +270,8 @@ async function startScan() {
     const formData = new FormData();
     formData.append('file', selectedFile);  
 
-    const response = await fetch("/predict", {
+    const response = await fetch(API_URL, {
       method: 'POST',
-      headers: {
-    ...Session.authHeaders(), 
-     },
       body: formData
     });
 
@@ -384,6 +367,19 @@ function renderResult(data) {
 
   const section = document.getElementById('resultSection');
   section.classList.add('show');
+
+  // ── Glow effect on result banner based on severity ──
+  const banner    = document.querySelector('.result-banner');
+  const glowClass = isHealthy               ? 'glow-healthy'
+                  : data.stage === 'Early'    ? 'glow-early'
+                  : data.stage === 'Moderate' ? 'glow-moderate'
+                  : /* Severe / Critical */     'glow-critical';
+
+  // Remove any previous glow then apply new one
+  banner.classList.remove('glow-healthy', 'glow-early', 'glow-moderate', 'glow-critical');
+  void banner.offsetWidth; // force reflow so animation restarts
+  banner.classList.add(glowClass);
+
   setTimeout(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
 }
 

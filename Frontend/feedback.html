@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Feedback — LeafSense</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="CSS/style.css" />
+    <link rel="stylesheet" href="CSS/feedback.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap" rel="stylesheet"/>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  </head>
+  <body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+      <a href="index.html" class="logo">
+        <div class="logo-icon">
+          <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
+        </div>
+        <span class="logo-text">LeafSense</span>
+      </a>
+      <div class="nav-links">
+        <a href="index.html">Home</a>
+        <a href="detect.html">Detect</a>
+        <a href="history.html">History</a>
+        <a href="feedback.html">Feedback</a>
+        <a href="about.html">About</a>
+      </div>
+      <div class="nav-right" id="navRight"></div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="mobile-nav" id="mobileNav">
+        <a href="index.html">Home</a>
+        <a href="detect.html">Detect</a>
+        <a href="history.html">History</a>
+        <a href="about.html">About</a>
+        <a href="profile.html">Profile</a>
+        <div id="mobileNavAuth"></div>
+      </div>
+    </nav>
+
+    <!-- PAGE BODY -->
+    <div class="fb-page">
+
+      <!-- LEFT PANEL -->
+      <aside class="fb-aside">
+        <div class="fb-aside-inner">
+          <div class="fb-aside-badge">
+            <i data-lucide="message-square-heart" style="width:13px;height:13px"></i>
+            Share Your Thoughts
+          </div>
+          <h1>Your feedback<br/>makes us<br/><em>better.</em></h1>
+          <p>Every suggestion, complaint, and compliment helps us build a better tool for Indian farmers.</p>
+
+          <div class="fb-trust-list">
+            <div class="fb-trust-item">
+              <div class="fb-trust-icon">
+                <i data-lucide="clock" style="width:16px;height:16px;color:var(--leaf)"></i>
+              </div>
+              <span>Takes less than 2 minutes</span>
+            </div>
+            <div class="fb-trust-item">
+              <div class="fb-trust-icon">
+                <i data-lucide="shield-check" style="width:16px;height:16px;color:var(--leaf)"></i>
+              </div>
+              <span>Your response is private</span>
+            </div>
+            <div class="fb-trust-item">
+              <div class="fb-trust-icon">
+                <i data-lucide="heart" style="width:16px;height:16px;color:var(--leaf)"></i>
+              </div>
+              <span>Every submission is read by us</span>
+            </div>
+          </div>
+
+          <!-- Decorative -->
+          <div class="fb-aside-deco" aria-hidden="true">
+            <div class="fb-deco-ring fb-ring-1"></div>
+            <div class="fb-deco-ring fb-ring-2"></div>
+            <div class="fb-deco-emoji">💬</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- FORM PANEL -->
+      <main class="fb-main">
+        <div class="fb-form-card" id="fbFormCard">
+
+          <!-- Step indicator -->
+          <div class="fb-steps">
+            <div class="fb-step active" id="step1dot"><span>1</span></div>
+            <div class="fb-step-line" id="line1"></div>
+            <div class="fb-step" id="step2dot"><span>2</span></div>
+            <div class="fb-step-line" id="line2"></div>
+            <div class="fb-step" id="step3dot"><span>3</span></div>
+          </div>
+
+          <!-- ── STEP 1: Rating + Category ── -->
+          <div class="fb-step-panel active" id="panel1">
+            <h2 class="fb-step-title">How was your experience?</h2>
+            <p class="fb-step-sub">Rate LeafSense overall</p>
+
+            <!-- Emoji Rating -->
+            <div class="fb-rating">
+              <button class="fb-emoji-btn" data-val="1" title="Terrible">😞</button>
+              <button class="fb-emoji-btn" data-val="2" title="Bad">😕</button>
+              <button class="fb-emoji-btn" data-val="3" title="Okay">😐</button>
+              <button class="fb-emoji-btn" data-val="4" title="Good">😊</button>
+              <button class="fb-emoji-btn" data-val="5" title="Excellent">🤩</button>
+            </div>
+            <div class="fb-rating-label" id="ratingLabel">Tap an emoji to rate</div>
+
+            <!-- Category -->
+            <div class="fb-field">
+              <label class="fb-label">What are you sharing feedback about?</label>
+              <div class="fb-category-grid">
+                <button class="fb-cat-btn" data-cat="accuracy">
+                  <i data-lucide="scan-line" style="width:16px;height:16px"></i>
+                  Disease Accuracy
+                </button>
+                <button class="fb-cat-btn" data-cat="speed">
+                  <i data-lucide="zap" style="width:16px;height:16px"></i>
+                  Speed
+                </button>
+                <button class="fb-cat-btn" data-cat="language">
+                  <i data-lucide="languages" style="width:16px;height:16px"></i>
+                  Language Support
+                </button>
+                <button class="fb-cat-btn" data-cat="ui">
+                  <i data-lucide="layout" style="width:16px;height:16px"></i>
+                  App Design
+                </button>
+                <button class="fb-cat-btn" data-cat="treatment">
+                  <i data-lucide="pill" style="width:16px;height:16px"></i>
+                  Treatment Advice
+                </button>
+                <button class="fb-cat-btn" data-cat="other">
+                  <i data-lucide="more-horizontal" style="width:16px;height:16px"></i>
+                  Other
+                </button>
+              </div>
+            </div>
+
+            <button class="fb-next-btn" id="next1" onclick="goStep(2)" disabled>
+              Continue
+              <i data-lucide="arrow-right" style="width:16px;height:16px"></i>
+            </button>
+          </div>
+
+          <!-- ── STEP 2: Message ── -->
+          <div class="fb-step-panel" id="panel2">
+            <h2 class="fb-step-title">Tell us more</h2>
+            <p class="fb-step-sub">What worked well? What could be better?</p>
+
+            <div class="fb-field">
+              <label class="fb-label" for="fbMessage">Your feedback</label>
+              <textarea class="fb-textarea" id="fbMessage" rows="5" placeholder="E.g. The disease detection was accurate but the app was a bit slow on my phone..."></textarea>
+              <div class="fb-char-count"><span id="charCount">0</span> / 500</div>
+            </div>
+
+            <div class="fb-btn-row">
+              <button class="fb-back-btn" onclick="goStep(1)">
+                <i data-lucide="arrow-left" style="width:15px;height:15px"></i>
+                Back
+              </button>
+              <button class="fb-next-btn" id="next2" onclick="goStep(3)">
+                Continue
+                <i data-lucide="arrow-right" style="width:16px;height:16px"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- ── STEP 3: Review & Submit ── -->
+          <div class="fb-step-panel" id="panel3">
+            <h2 class="fb-step-title">Review your feedback</h2>
+            <p class="fb-step-sub">Looks good? Hit submit!</p>
+
+            <div class="fb-review-card">
+              <div class="fb-review-row">
+                <span class="fb-review-key">Rating</span>
+                <span class="fb-review-val" id="rv-rating">—</span>
+              </div>
+              <div class="fb-review-divider"></div>
+              <div class="fb-review-row">
+                <span class="fb-review-key">Category</span>
+                <span class="fb-review-val" id="rv-cat">—</span>
+              </div>
+              <div class="fb-review-divider"></div>
+              <div class="fb-review-row fb-review-row-col">
+                <span class="fb-review-key">Feedback</span>
+                <span class="fb-review-val" id="rv-msg">—</span>
+              </div>
+
+            </div>
+
+            <!-- Farmer checkbox -->
+            <label class="fb-check-row">
+              <input type="checkbox" id="isFarmer" class="fb-checkbox" />
+              <span class="fb-check-box"></span>
+              <span class="fb-check-label">I am a farmer using LeafSense for my crops</span>
+            </label>
+
+            <div class="fb-btn-row">
+              <button class="fb-back-btn" onclick="goStep(2)">
+                <i data-lucide="arrow-left" style="width:15px;height:15px"></i>
+                Back
+              </button>
+              <button class="fb-submit-btn" id="submitBtn" onclick="submitFeedback()">
+                <i data-lucide="send" style="width:16px;height:16px"></i>
+                Submit Feedback
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- SUCCESS STATE -->
+        <div class="fb-success" id="fbSuccess">
+          <div class="fb-success-icon">
+            <i data-lucide="check-circle-2" style="width:48px;height:48px;color:var(--leaf)"></i>
+          </div>
+          <h2>Thank you! 🙏</h2>
+          <p>Your feedback has been submitted. We truly appreciate you taking the time — it helps us make LeafSense better for every farmer.</p>
+          <div class="fb-success-actions">
+            <a href="detect.html" class="btn-big">
+              <i data-lucide="camera" style="width:16px;height:16px"></i>
+              Scan Another Leaf
+            </a>
+            <a href="index.html" class="fb-home-link">Go to Home</a>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div class="logo">
+        <div class="logo-icon">
+          <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
+        </div>
+        <span class="logo-text">LeafSense</span>
+      </div>
+      <p>AI-Based Plant Disease Detection · Built for Indian Farmers</p>
+      <p class="helpline">Kisan Helpline: <strong>1800-180-1551</strong></p>
+    </footer>
+
+    <script src="Scripts/auth.js"></script>
+    <script src="Scripts/navbar.js"></script>
+    <script src="Scripts/feedback.js"></script>
+    <script>
+      lucide.createIcons();
+      initNavbar('feedback');
+    </script>
+  </body>
+</html>

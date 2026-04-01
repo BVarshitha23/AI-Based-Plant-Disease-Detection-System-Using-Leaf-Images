@@ -14,6 +14,7 @@
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
   </head>
   <body>
+
   <!-- NAVBAR -->
   <nav class="navbar">
     <a href="index.html" class="logo">
@@ -28,6 +29,8 @@
       <a href="index.html">Home</a>
       <a href="detect.html">Detect</a>
       <a href="history.html">History</a>
+      <a href="feedback.html">Feedback</a>
+      <a href="about.html">About</a>
       <!-- <a href="profile.html">Profile</a> -->
     </div>
 
@@ -45,6 +48,8 @@
       <a href="detect.html">Detect</a>
       <a href="history.html">History</a>
       <a href="profile.html">Profile</a>
+      <a href="feedback.html">Feedback</a>
+      <a href="about.html">About</a>
       <div id="mobileNavAuth"></div>
     </div>
   </nav>
@@ -167,6 +172,7 @@
       </div>
     </div>
 
+    <script>lucide.createIcons();</script>
     <script src="Scripts/auth.js"></script>
     <script src="Scripts/history.js"></script>
     <script src="Scripts/navbar.js"></script>
@@ -174,5 +180,22 @@
       lucide.createIcons();
       initNavbar('history'); 
     </script>
+    <!-- <script>
+    if (Session.isLoggedIn()) {
+        const navAuth = document.getElementById("navAuth");
+        navAuth.innerHTML =
+          '<a href="#" onclick="logout(); return false;" class="nav-link">Logout</a>';
+      } else {
+        window.location.href = "login.html";
+      }
+
+      function logout() {
+        Session.logout();
+        showToast("success", "Logged out successfully.");
+        setTimeout(() => {
+          window.location.href = "index.html";
+        }, 700);
+      }
+      </script> -->
   </body>
 </html>

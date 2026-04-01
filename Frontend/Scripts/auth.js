@@ -1,8 +1,8 @@
 const Session = {
-  //  Check login 
+  // Check login 
   isLoggedIn: () => !!sessionStorage.getItem("ls_user"),
 
-  // Register 
+  //  Register 
   register: async (username, email, password) => {
     try {
       const res = await fetch("/auth/signup", {
@@ -13,7 +13,7 @@ const Session = {
       const data = await res.json();
 
       if (res.ok) {
-        return { ok: true };
+        return { ok: true };  
       } else {
         return { ok: false, error: data.detail || "Registration failed" };
       }
@@ -50,12 +50,12 @@ const Session = {
     }
   },
 
-  //  Logout ─
+  //  Logout 
   logout: () => {
     sessionStorage.removeItem("ls_user");
   },
 
-  // Get user 
+  //  Get user 
   getUser: () => {
     const raw = sessionStorage.getItem("ls_user");
     return raw ? JSON.parse(raw) : null;
@@ -68,13 +68,13 @@ const Session = {
     return JSON.parse(raw).token || null;
   },
 
-  //  Auth header 
+  // Auth header 
   authHeaders: () => {
     const token = Session.getToken();
     return token ? { Authorization: `Bearer ${token}` } : {};
   },
 
-  //  Protect pages 
+  // Protect pages 
   requireAuth: () => {
     if (!Session.isLoggedIn()) {
       window.location.href = "login.html";
@@ -83,7 +83,7 @@ const Session = {
     return true;
   },
 
-  //  Navbar (Profile instead of Logout) 
+  // Navbar (Profile instead of Logout) 
   renderProtectedNav: () => {
     const navAuth = document.getElementById("navAuth");
     if (!navAuth) return;
@@ -101,7 +101,7 @@ const Session = {
     }
   },
 
-  //  Sync user from backend 
+  // Sync user from backend 
   syncUser: async () => {
     try {
       const res = await fetch("/auth/me", {
@@ -131,7 +131,7 @@ const Session = {
   },
 };
 
-//  Toast helper 
+// Toast helper 
 function showToast(type, message) {
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;

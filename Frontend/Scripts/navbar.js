@@ -14,7 +14,9 @@ function initNavbar(page) {
       (page === 'home'    && href.includes('index'))   ||
       (page === 'detect'  && href.includes('detect'))  ||
       (page === 'history' && href.includes('history')) ||
-      (page === 'profile' && href.includes('profile'))
+      (page === 'profile' && href.includes('profile')) ||
+      (page === 'feedback' && href.includes('feedback')) ||
+      (page === 'about'   && href.includes('about'))
     ) {
       a.classList.add('active');
     }

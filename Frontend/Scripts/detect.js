@@ -272,6 +272,7 @@ async function startScan() {
 
     const response = await fetch(API_URL, {
       method: 'POST',
+      headers: Session.authHeaders(),
       body: formData
     });
 

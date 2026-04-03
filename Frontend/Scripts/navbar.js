@@ -1,6 +1,6 @@
 function initNavbar(page) {
   // Redirect to login
-  const publicPages = ['login', 'register'];
+  const publicPages = ['login', 'register', 'portal'];
   if (!publicPages.includes(page) && !Session.isLoggedIn()) {
     window.location.href = 'login.html';
     return;
@@ -26,6 +26,8 @@ function initNavbar(page) {
   const navRight      = document.getElementById('navRight');
   const mobileNavAuth = document.getElementById('mobileNavAuth');
   const user          = Session.getUser();
+  const isAdmin = user?.is_admin === true || user?.role === 'admin';
+
 
   if (user) {
     const initials = (user.username || 'U').slice(0, 2).toUpperCase();
@@ -48,7 +50,13 @@ function initNavbar(page) {
             <i data-lucide="user" style="width:15px;height:15px;flex-shrink:0;"></i>
             My Profile
           </a>
+          ${isAdmin ? `
+          <a href="admin.html" class="nav-dropdown-item">
+          <i data-lucide="shield" style="width:15px;height:15px;flex-shrink:0;"></i>
+          Admin Dashboard
+          </a>
           <div class="nav-dropdown-divider"></div>
+         ` : ''}
           <button class="nav-dropdown-item danger" onclick="navLogout()">
             <i data-lucide="log-out" style="width:15px;height:15px;flex-shrink:0;"></i>
             Logout

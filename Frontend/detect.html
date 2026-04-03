@@ -24,10 +24,10 @@
       <!-- Desktop nav links -->
       <div class="nav-links">
         <a href="index.html">Home</a>
+        <a href="about.html">About</a>
         <a href="detect.html">Detect</a>
         <a href="history.html">History</a>
         <a href="feedback.html">Feedback</a>
-        <a href="about.html">About</a>
         <!-- <a href="profile.html">Profile</a> -->
       </div>
 
@@ -42,77 +42,14 @@
       <!-- Mobile drawer -->
       <div class="mobile-nav" id="mobileNav">
         <a href="index.html">Home</a>
+        <a href="about.html">About</a>
         <a href="detect.html">Detect</a>
         <a href="history.html">History</a>
         <a href="profile.html">Profile</a>
         <a href="feedback.html">Feedback</a>
-        <a href="about.html">About</a>
         <div id="mobileNavAuth"></div>
       </div>
     </nav>
-
-    <!-- CAMERA MODAL -->
-    <div class="cam-overlay" id="camOverlay">
-      <div class="cam-modal">
-        <div class="cam-header">
-          <span class="cam-title">
-            <i
-              data-lucide="camera"
-              style="
-                width: 16px;
-                height: 16px;
-                margin-right: 6px;
-                vertical-align: middle;
-              "
-            ></i>
-            Take a Leaf Photo
-          </span>
-          <button class="cam-close" onclick="closeCamera()">
-            <i data-lucide="x" style="width: 18px; height: 18px"></i>
-          </button>
-        </div>
-        <div class="cam-body">
-          <video
-            id="camVideo"
-            class="cam-video"
-            autoplay
-            playsinline
-            muted
-          ></video>
-          <canvas id="camCanvas" style="display: none"></canvas>
-          <div class="cam-tip">
-            <i
-              data-lucide="info"
-              style="
-                width: 13px;
-                height: 13px;
-                margin-right: 4px;
-                vertical-align: middle;
-              "
-            ></i>
-            Hold the leaf steady in good light, then click Capture
-          </div>
-        </div>
-        <div class="cam-footer">
-          <button
-            class="cam-switch-btn"
-            onclick="switchCamera()"
-            id="camSwitchBtn"
-          >
-            <i
-              data-lucide="flip-horizontal"
-              style="width: 16px; height: 16px"
-            ></i>
-            Flip Camera
-          </button>
-          <button class="cam-capture-btn" onclick="capturePhoto()">
-            <i data-lucide="aperture" style="width: 20px; height: 20px"></i>
-            Capture
-          </button>
-          <button class="cam-cancel-btn" onclick="closeCamera()">Cancel</button>
-        </div>
-      </div>
-    </div>
 
     <!-- UPLOAD SECTION  -->
     <section class="upload-section">
@@ -162,16 +99,6 @@
                   style="width: 18px; height: 18px"
                 ></i>
                 <span>Choose from Gallery</span>
-              </button>
-              <button
-                class="upload-opt-btn camera-btn"
-                onclick="
-                  event.stopPropagation();
-                  openCamera();
-                "
-              >
-                <i data-lucide="camera" style="width: 18px; height: 18px"></i>
-                <span>Take a Photo</span>
               </button>
             </div>
           </div>
@@ -320,8 +247,21 @@
       </div>
     </section>
 
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div class="logo">
+        <div class="logo-icon">
+          <i
+            data-lucide="leaf"
+            style="width: 20px; height: 20px; color: #fff"
+          ></i>
+        </div>
+        <span class="logo-text">LeafSense</span>
+      </div>
+      <p>AI-Based Plant Disease Detection · Built for Farmers</p>
+    </footer>
+
     <script src="Scripts/detect.js"></script>
-    <script src="Scripts/cam.js"></script>
     <script src="Scripts/auth.js"></script>
     <script src="Scripts/navbar.js"></script>
     <script>

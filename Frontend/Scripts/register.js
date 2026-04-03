@@ -1,4 +1,8 @@
-if (Session.isLoggedIn()) window.location.href = "index.html";
+if (Session.isLoggedIn()) window.location.href = "index.html"; 
+
+document.getElementById("name").addEventListener("input", function () {
+  this.value = this.value.replace(/[^a-zA-Z\s]/g, "");
+});
 
 function checkStrength(val) {
   const fill  = document.getElementById("pwStrengthFill");
@@ -12,11 +16,11 @@ function checkStrength(val) {
   if (/[^a-zA-Z0-9]/.test(val))  score++;
   if (score <= 1) {
     fill.classList.add("weak");   label.textContent = "Weak";
-    } else if (score <= 2) {
+  } else if (score <= 2) {
     fill.classList.add("medium"); label.textContent = "Medium";
-    } else {
+  } else {
     fill.classList.add("strong"); label.textContent = "Strong";
-    }
+  }
 }
 
 function togglePw(id, btn) {
@@ -39,13 +43,16 @@ async function handleRegister(e) {
   const btn      = document.getElementById("registerBtn");
   const errBox   = document.getElementById("authError");
 
-  // Clear previous errors
   errBox.classList.remove("show");
   ["nameError","emailError","pwError","confirmError"].forEach(id =>
     document.getElementById(id).classList.remove("show")
   );
 
-  // Validate
+  if (!/^[a-zA-Z\s]+$/.test(name)) {
+    const nameErr = document.getElementById("nameError");
+    nameErr.textContent = "Name must contain only letters and spaces.";
+    nameErr.classList.add("show"); return;
+  }
   if (name.length < 2) {
     document.getElementById("nameError").classList.add("show"); return;
   }
@@ -62,19 +69,16 @@ async function handleRegister(e) {
   const result = await Session.register(name, email, password);
 
   if (result.ok) {
-    // Auto-login after registration
-    const loginResult = await Session.login(email, password);
-    showToast("success", "Account created! Welcome to LeafSense.");
-    setTimeout(() => {
-      window.location.href = loginResult.ok ? "index.html" : "login.html";
-    }, 800);
+    Session.logout(); // ← clear any accidental session
+    showToast("success", "Account created! Please sign in.");
+    setTimeout(() => window.location.href = "login.html", 800); 
   } else {
-  document.getElementById("authErrorMsg").textContent =
-    result.error || "Registration failed. Please try again.";
-  errBox.classList.add("show");
-  btn.disabled = false;
-  btn.innerHTML =
-    '<i data-lucide="user-plus" style="width:18px;height:18px;"></i> Create Account';
-  lucide.createIcons();
+    document.getElementById("authErrorMsg").textContent =
+      result.error || "Registration failed. Please try again.";
+    errBox.classList.add("show");
+    btn.disabled = false;
+    btn.innerHTML =
+      '<i data-lucide="user-plus" style="width:18px;height:18px;"></i> Create Account';
+    lucide.createIcons();
   }
 }

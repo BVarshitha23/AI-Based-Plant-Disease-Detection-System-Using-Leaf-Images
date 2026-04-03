@@ -1,6 +1,7 @@
 /* ── Login Page Overrides ── */
       .auth-page {
-        min-height: 100vh;
+        height: 100vh;
+        overflow: hidden;
         display: grid;
         grid-template-columns: 1fr 1fr;
         background: var(--white);
@@ -136,7 +137,9 @@
       /* ── Right Panel — Form ── */
       .auth-form-panel {
         display: flex;
+        overflow: hidden;
         flex-direction: column;
+        overflow: hidden;
         justify-content: center;
         padding: 60px 64px;
         background: var(--sky);

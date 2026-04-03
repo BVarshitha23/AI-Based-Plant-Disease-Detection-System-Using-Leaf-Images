@@ -223,11 +223,11 @@ function handleDrop(e) {
 function showPreview(url) {
   const img     = document.getElementById('previewImg');
   const zone    = document.getElementById('dropZone');
-  const content = document.getElementById('dzContent');
+  // const content = document.getElementById('dzContent');
 
   img.src           = url;
   img.style.display = 'block';
-  content.style.display = 'none';
+  // content.style.display = 'none';
   zone.classList.add('has-img');
 
   const btn = document.getElementById('scanBtn');
@@ -461,29 +461,31 @@ function resetScan() {
   currentResult = null;
   currentLang   = 'en';
 
-  const img = document.getElementById('previewImg');
+  const img  = document.getElementById('previewImg');
+  const zone = document.getElementById('dropZone');
+
   img.style.display = 'none';
-  img.src = '';
-  document.getElementById('dzContent').style.display  = 'flex';
-  document.getElementById('dropZone').classList.remove('has-img');
+  img.src           = '';
+  zone.classList.remove('has-img');    
   document.getElementById('fileInput').value = '';
 
   document.getElementById('scanBtnWrap').style.display = 'block';
   const btn = document.getElementById('scanBtn');
   btn.disabled         = true;
-  btn.innerHTML = '<i data-lucide="upload-cloud" style="width:18px;height:18px;"></i> Upload a photo to scan';
-  if(typeof lucide!=='undefined') lucide.createIcons();
+  btn.innerHTML        = '<i data-lucide="upload-cloud" style="width:18px;height:18px;"></i>&nbsp; Upload a photo to scan';
   btn.style.background = '';
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 
-  document.getElementById('progFill').style.width = '0%';
+  document.getElementById('progFill').style.width     = '0%';
   document.getElementById('analyzingBox').classList.remove('show');
-  document.getElementById('sevFill').style.width  = '0%';
+  document.getElementById('sevFill').style.width       = '0%';
   document.getElementById('resultSection').classList.remove('show');
   document.getElementById('unknownBar').classList.remove('show');
 
-  const playBtn = document.getElementById('playBtn');
-  playBtn.textContent = '▶ Listen Now';
-  playBtn.onclick     = speakResult;
+  const playBtn    = document.getElementById('playBtn');
+  playBtn.innerHTML = '<i data-lucide="volume-2" style="width:16px;height:16px;"></i> Listen Now';
+  playBtn.onclick  = speakResult;
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 
   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   window.scrollTo({ top: 0, behavior: 'smooth' });

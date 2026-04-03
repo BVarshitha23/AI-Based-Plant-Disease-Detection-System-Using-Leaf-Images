@@ -1,0 +1,499 @@
+//  Guard: must be logged in as admin 
+const userData   = sessionStorage.getItem('ls_user');
+const _user      = userData ? JSON.parse(userData) : null;
+if (!_user || _user.role !== 'admin') {
+  window.location.href = 'login.html';
+}
+const adminToken = _user.token;
+
+// Admin info in sidebar 
+const adminName = _user.username || 'Admin';
+document.getElementById('adminName').textContent   = adminName;
+document.getElementById('adminAvatar').textContent = adminName.slice(0, 2).toUpperCase();
+
+lucide.createIcons();
+
+//  Data stores 
+let allUsers      = [];
+let allDetections = [];
+let allFeedback   = [];
+
+//  Helpers 
+const CAT_LABELS = {
+  accuracy: 'Disease Accuracy', speed: 'Speed',
+  language: 'Language Support', ui: 'App Design',
+  treatment: 'Treatment Advice', other: 'Other'
+};
+const CAT_ICONS = {
+  accuracy: 'scan-line', speed: 'zap', language: 'languages',
+  ui: 'layout', treatment: 'pill', other: 'more-horizontal'
+};
+const STAGE_BADGE = {
+  Healthy:  'green',
+  Early:    'blue',
+  Moderate: 'amber',
+  Severe:   'red',
+  Critical: 'red',
+  Unknown:  'gray'
+};
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(iso) {
+  return new Date(iso).toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+}
+function fmtTime(iso) {
+  return new Date(iso).toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
+}
+function fmtDateTime(iso) { return `${fmtDate(iso)} · ${fmtTime(iso)}`; }
+
+function isThisWeek(iso) {
+  const diff = (new Date() - new Date(iso)) / (1000 * 60 * 60 * 24);
+  return diff <= 7;
+}
+function isToday(iso) {
+  return new Date(iso).toDateString() === new Date().toDateString();
+}
+
+//  Auth header 
+function authHeaders() {
+  return { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
+}
+
+//  Logout 
+function adminLogout() {
+  sessionStorage.removeItem('ls_user');
+  window.location.href = 'login.html';
+}
+
+// Sidebar toggle (mobile) 
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+}
+
+//  Tab switching 
+const TAB_TITLES = {
+  overview:   'Overview',
+  users:      'Users',
+  detections: 'Detections',
+  feedback:   'Feedback'
+};
+
+function switchTab(name) {
+  document.querySelectorAll('.ad-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.ad-nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  document.getElementById(`nav-${name}`).classList.add('active');
+  document.getElementById('topbarTitle').textContent = TAB_TITLES[name];
+  document.getElementById('sidebar').classList.remove('open');
+}
+
+
+//  LOAD ALL DATA
+async function refreshAll() {
+  await Promise.all([loadUsers(), loadDetections(), loadFeedback()]);
+  renderOverview();
+}
+
+//  Users 
+async function loadUsers() {
+  try {
+    const res  = await fetch('/admin/users', { headers: authHeaders() });
+    if (res.status === 401) { adminLogout(); return; }
+    const data = await res.json();
+    allUsers   = data.users || [];
+    document.getElementById('navBadgeUsers').textContent = allUsers.length;
+    // renderUsers(allUsers);
+  } catch {
+    document.getElementById('userCount').textContent = 'Failed to load.';
+  }
+}
+
+//  Detections 
+async function loadDetections() {
+  try {
+    const res     = await fetch('/admin/detections', { headers: authHeaders() });
+    if (res.status === 401) { adminLogout(); return; }
+    const data    = await res.json();
+    allDetections = data.detections || [];
+    document.getElementById('navBadgeDetections').textContent = allDetections.length;
+    renderDetections(allDetections);
+  } catch {
+    document.getElementById('detectCount').textContent = 'Failed to load.';
+  }
+}
+
+// Feedback 
+async function loadFeedback() {
+  try {
+    const res   = await fetch('/admin/feedback', { headers: authHeaders() });
+    if (res.status === 401) { adminLogout(); return; }
+    const data  = await res.json();
+    allFeedback = data.feedback || [];
+    document.getElementById('navBadgeFeedback').textContent = allFeedback.length;
+    computeFeedbackStats();
+    renderFeedbackList(allFeedback);
+  } catch {
+    document.getElementById('resultsCount').textContent = 'Failed to load.';
+  }
+}
+
+
+//  OVERVIEW
+function renderOverview() {
+    renderUsers(allUsers);
+    renderDetections(allDetections);
+    renderFeedbackList(allFeedback);
+   
+  // Users
+  document.getElementById('ovUsers').textContent = allUsers.length;
+  const newUsers = allUsers.filter(u => isThisWeek(u.created_at)).length;
+  document.getElementById('ovUsersNew').textContent = `${newUsers} joined this week`;
+
+  // Detections
+  document.getElementById('ovDetections').textContent = allDetections.length;
+  const today = allDetections.filter(d => isToday(d.created_at)).length;
+  document.getElementById('ovDetectionsToday').textContent = `${today} today`;
+
+  // Feedback
+  document.getElementById('ovFeedback').textContent = allFeedback.length;
+  const avgR = allFeedback.length
+    ? (allFeedback.reduce((s, f) => s + f.rating, 0) / allFeedback.length).toFixed(1)
+    : '—';
+  document.getElementById('ovAvgRating').textContent = `avg rating ${avgR}`;
+
+  // Avg Confidence
+  const withConf = allDetections.filter(d => d.confidence > 0);
+  const avgConf  = withConf.length
+    ? (withConf.reduce((s, d) => s + d.confidence, 0) / withConf.length).toFixed(1) + '%'
+    : '—';
+  document.getElementById('ovAccuracy').textContent = avgConf;
+
+  // Top disease
+  const diseaseCount = {};
+  allDetections.forEach(d => {
+    diseaseCount[d.predicted_class] = (diseaseCount[d.predicted_class] || 0) + 1;
+  });
+  const topDisease = Object.entries(diseaseCount).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById('ovTopDisease').textContent = topDisease
+    ? `top: ${topDisease[0].split(' - ')[0]}`
+    : 'top: —';
+
+  // Recent users
+  const recentUsers = [...allUsers]
+    .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5);
+  document.getElementById('ovRecentUsers').innerHTML = recentUsers.length
+    ? recentUsers.map(u => `
+        <div class="ad-mini-item">
+          <div class="ad-mini-left">
+            <div class="ad-mini-avatar">${u.username.slice(0,2).toUpperCase()}</div>
+            <div>
+              <div class="ad-mini-name">${escHtml(u.username)}</div>
+              <div class="ad-mini-sub">${escHtml(u.email)}</div>
+            </div>
+          </div>
+          <div class="ad-mini-right">${fmtDate(u.created_at)}</div>
+        </div>`).join('')
+    : '<div class="ad-mini-item"><div class="ad-mini-sub" style="padding:8px 0">No users yet</div></div>';
+
+  // Recent detections
+  const recentDetect = [...allDetections]
+    .sort((a,b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5);
+  document.getElementById('ovRecentDetections').innerHTML = recentDetect.length
+    ? recentDetect.map(d => `
+        <div class="ad-mini-item">
+          <div class="ad-mini-left">
+            <div class="ad-mini-avatar" style="background:var(--blue-pale);color:var(--blue)">
+              <i data-lucide="scan-line" style="width:13px;height:13px"></i>
+            </div>
+            <div>
+              <div class="ad-mini-name">${escHtml(d.predicted_class)}</div>
+              <div class="ad-mini-sub">${escHtml(d.username || 'Unknown')}</div>
+            </div>
+          </div>
+          <div class="ad-mini-right">${fmtDate(d.created_at)}</div>
+        </div>`).join('')
+    : '<div class="ad-mini-item"><div class="ad-mini-sub" style="padding:8px 0">No detections yet</div></div>';
+
+  lucide.createIcons();
+}
+
+//  USERS TAB
+function renderUsers(users) {
+  document.getElementById('userCount').textContent =
+    `Showing ${users.length} of ${allUsers.length} users`;
+
+  const tbody = document.getElementById('usersBody');
+  if (!users.length) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-soft)">No users found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => {
+    const detectCount = allDetections.filter(d => d.user_id === u.id).length;
+    return `
+    <tr class="clickable" onclick="viewUser(${u.id})">
+      <td>
+        <div class="ad-cell-user">
+          <div class="ad-cell-avatar">${u.username.slice(0,2).toUpperCase()}</div>
+          <div class="ad-cell-name">${escHtml(u.username)}</div>
+        </div>
+      </td>
+      <td style="color:var(--text-soft)">${escHtml(u.email)}</td>
+      <td style="color:var(--text-soft)">${fmtDate(u.created_at)}</td>
+      <td><span class="ad-badge ad-badge--blue">${detectCount} scan${detectCount !== 1 ? 's' : ''}</span></td>
+      <td>
+        ${u.is_admin
+          ? '<span class="ad-badge ad-badge--amber">Admin</span>'
+          : '<span class="ad-badge ad-badge--gray">User</span>'}
+      </td>
+      <td>
+        <button class="ad-view-btn" onclick="event.stopPropagation();viewUser(${u.id})">
+          <i data-lucide="eye" style="width:12px;height:12px"></i>
+          View
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  lucide.createIcons();
+}
+
+function filterUsers() {
+  const q = document.getElementById('userSearch').value.toLowerCase();
+  const filtered = allUsers.filter(u =>
+    u.username.toLowerCase().includes(q) ||
+    u.email.toLowerCase().includes(q)
+  );
+  renderUsers(filtered);
+}
+
+function viewUser(userId) {
+  const user    = allUsers.find(u => u.id === userId);
+  if (!user) return;
+
+  const detects = allDetections.filter(d => d.user_id === userId);
+
+  document.getElementById('usersMain').style.display  = 'none';
+  document.getElementById('userDetail').style.display = 'block';
+
+  document.getElementById('userDetailCard').innerHTML = `
+    <div class="ad-detail-avatar">${user.username.slice(0,2).toUpperCase()}</div>
+    <div>
+      <div class="ad-detail-name">${escHtml(user.username)}</div>
+      <div class="ad-detail-email">${escHtml(user.email)}</div>
+      <div class="ad-detail-stats">
+        <div class="ad-detail-stat">Joined: <strong>${fmtDate(user.created_at)}</strong></div>
+        <div class="ad-detail-stat">Detections: <strong>${detects.length}</strong></div>
+        <div class="ad-detail-stat">Role: <strong>${user.is_admin ? 'Admin' : 'User'}</strong></div>
+      </div>
+    </div>
+  `;
+
+  const tbody = document.getElementById('userDetectBody');
+  if (!detects.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-soft)">No detections yet</td></tr>`;
+  } else {
+    tbody.innerHTML = detects.map((d, i) => `
+      <tr>
+        <td style="color:var(--text-soft)">${i + 1}</td>
+        <td><strong>${escHtml(d.predicted_class)}</strong></td>
+        <td><strong style="color:var(--leaf)">${d.confidence}%</strong></td>
+        <td>${d.severity_pct}%</td>
+        <td><span class="ad-badge ad-badge--${STAGE_BADGE[d.stage] || 'gray'}">${escHtml(d.stage)}</span></td>
+        <td style="font-size:12px;color:var(--text-soft);max-width:220px">${escHtml(d.urgency)}</td>
+        <td style="color:var(--text-soft)">${fmtDateTime(d.created_at)}</td>
+      </tr>`).join('');
+  }
+
+  lucide.createIcons();
+}
+
+function closeUserDetail() {
+  document.getElementById('userDetail').style.display = 'none';
+  document.getElementById('usersMain').style.display  = 'block';
+}
+
+
+//  DETECTIONS TAB
+function renderDetections(detections) {
+  document.getElementById('detectCount').textContent =
+    `Showing ${detections.length} of ${allDetections.length} detections`;
+
+  const tbody = document.getElementById('detectionsBody');
+  if (!detections.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-soft)">No detections found</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = detections.map((d, i) => `
+    <tr>
+      <td style="color:var(--text-soft)">${i + 1}</td>
+      <td>
+        <div class="ad-cell-user">
+          <div class="ad-cell-avatar" style="background:var(--blue-pale);color:var(--blue)">
+            ${(d.username || '?').slice(0,2).toUpperCase()}
+          </div>
+          <span>${escHtml(d.username || 'Unknown')}</span>
+        </div>
+      </td>
+      <td><strong>${escHtml(d.predicted_class)}</strong></td>
+      <td><strong style="color:var(--leaf)">${d.confidence}%</strong></td>
+      <td>${d.severity_pct}%</td>
+      <td><span class="ad-badge ad-badge--${STAGE_BADGE[d.stage] || 'gray'}">${escHtml(d.stage)}</span></td>
+      <td style="color:var(--text-soft)">${fmtDateTime(d.created_at)}</td>
+    </tr>`).join('');
+
+  lucide.createIcons();
+}
+
+function filterDetections() {
+  const q     = document.getElementById('detectSearch').value.toLowerCase();
+  const stage = document.getElementById('detectStage').value;
+  const filtered = allDetections.filter(d => {
+    if (stage && d.stage !== stage) return false;
+    if (q && !(
+      d.predicted_class.toLowerCase().includes(q) ||
+      (d.username || '').toLowerCase().includes(q)
+    )) return false;
+    return true;
+  });
+  renderDetections(filtered);
+}
+
+
+//  FEEDBACK TAB
+function computeFeedbackStats() {
+  const total = allFeedback.length;
+  document.getElementById('statTotal').textContent = total;
+
+  if (!total) {
+    document.getElementById('statAvgRating').textContent    = '—';
+    document.getElementById('statSatisfaction').textContent = '—';
+    document.getElementById('statTopCat').textContent       = '—';
+    return;
+  }
+
+  const avg = (allFeedback.reduce((s, f) => s + f.rating, 0) / total).toFixed(1);
+  document.getElementById('statAvgRating').textContent = `${avg} / 5`;
+
+  const happy = allFeedback.filter(f => f.rating >= 4).length;
+  const satisfaction = Math.round((happy / total) * 100);
+  document.getElementById('statSatisfaction').textContent = `${satisfaction}%`;
+
+  const catCount = {};
+  allFeedback.forEach(f => { catCount[f.category] = (catCount[f.category] || 0) + 1; });
+  const topCat = Object.entries(catCount).sort((a,b) => b[1]-a[1])[0];
+  document.getElementById('statTopCat').textContent =
+    topCat ? (CAT_LABELS[topCat[0]] || topCat[0]) : '—';
+}
+
+function applyFilters() {
+  const query    = document.getElementById('searchInput').value.toLowerCase();
+  const rating   = document.getElementById('filterRating').value;
+  const category = document.getElementById('filterCategory').value;
+
+  const filtered = allFeedback.filter(f => {
+    if (rating   && String(f.rating) !== rating)   return false;
+    if (category && f.category       !== category) return false;
+    if (query && !(f.message || '').toLowerCase().includes(query)) return false;
+    return true;
+  });
+
+  renderFeedbackList(filtered);
+  document.getElementById('resultsCount').textContent =
+    `Showing ${filtered.length} of ${allFeedback.length} responses`;
+}
+
+function toggleFeedbackClear() {
+  const val = document.getElementById('searchInput').value;
+  document.getElementById('feedbackClearBtn').style.display = val.length > 0 ? 'flex' : 'none';
+}
+
+function clearFeedbackSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('feedbackClearBtn').style.display = 'none';
+  applyFilters();
+}
+
+function toggleUserClear() {
+  const val = document.getElementById('userSearch').value;
+  document.getElementById('userClearBtn').style.display = val.length > 0 ? 'flex' : 'none';
+}
+
+function clearUserSearch() {
+  document.getElementById('userSearch').value = '';
+  document.getElementById('userClearBtn').style.display = 'none';
+  filterUsers();
+}
+
+function toggleDetectClear() {
+  const val = document.getElementById('detectSearch').value;
+  document.getElementById('detectClearBtn').style.display = val.length > 0 ? 'flex' : 'none';
+}
+
+function clearDetectSearch() {
+  document.getElementById('detectSearch').value = '';
+  document.getElementById('detectClearBtn').style.display = 'none';
+  filterDetections();
+}
+
+function renderFeedbackList(items) {
+  const list  = document.getElementById('feedbackList');
+  const empty = document.getElementById('emptyState');
+
+  if (!items.length) {
+    list.innerHTML = '';
+    empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = items.map((f, i) => {
+    const catLabel    = CAT_LABELS[f.category] || f.category;
+    const catIcon     = CAT_ICONS[f.category]  || 'tag';
+    const stars       = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
+    const ratingClass = f.rating >= 4 ? 'good' : f.rating === 3 ? 'mid' : 'bad';
+
+    return `
+    <div class="ad-card" style="animation-delay:${i * 25}ms">
+      <div class="ad-card-top">
+        <div class="ad-card-left">
+          <div class="ad-user-avatar">${(f.username || 'A').slice(0,2).toUpperCase()}</div>
+          <div>
+            <div class="ad-username-label">${escHtml(f.username || 'Anonymous')}</div>
+            <div class="ad-stars ad-stars--${ratingClass}">${stars}</div>
+            <div class="ad-rating-text">Rating ${f.rating}/5</div>
+          </div>
+        </div>
+        <div class="ad-card-right">
+          <div class="ad-cat-tag">
+            <i data-lucide="${catIcon}" style="width:12px;height:12px"></i>
+            ${catLabel}
+          </div>
+        </div>
+      </div>
+      <div class="ad-card-message">
+        ${f.message ? `<p>${escHtml(f.message)}</p>` : '<p class="ad-no-msg">No message provided.</p>'}
+      </div>
+      <div class="ad-card-footer">
+        <div class="ad-card-meta">
+          <i data-lucide="clock" style="width:12px;height:12px"></i>
+          ${fmtDateTime(f.created_at)}
+        </div>
+        <div class="ad-card-id">#${f.id}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  lucide.createIcons();
+}
+
+// Init 
+refreshAll();

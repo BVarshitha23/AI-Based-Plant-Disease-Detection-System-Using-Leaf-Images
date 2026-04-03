@@ -1,11 +1,11 @@
-// ── State ──
+//  State 
 let allRecords = [];
 let filtered   = [];
 let currentPage = 1;
-const PER_PAGE  = 15;
+const PER_PAGE  = 10;
 
 
-// ── Fetch History ──
+//  Fetch History 
 async function loadHistory() {
   const token = Session.getToken();
   if (!token) {
@@ -47,6 +47,17 @@ function updateStats() {
   document.getElementById('statDiseased').textContent = diseased;
   document.getElementById('statAvgConf').textContent  = avgConf + '%';
 }
+function handleSearch() {
+  const val = document.getElementById('searchInput').value;
+  document.getElementById('searchClearBtn').style.display = val.length > 0 ? 'flex' : 'none';
+  applyFilters();
+}
+
+function clearSearch() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchClearBtn').style.display = 'none';
+  applyFilters();
+}
 
 function applyFilters() {
   const search = document.getElementById('searchInput').value.toLowerCase();
@@ -62,6 +73,8 @@ function applyFilters() {
   if (sort === 'oldest')   filtered.sort((a,b) => new Date(a.created_at) - new Date(b.created_at));
   else if (sort === 'conf_desc') filtered.sort((a,b) => (b.confidence||0) - (a.confidence||0));
   else if (sort === 'sev_desc')  filtered.sort((a,b) => (b.severity_pct||0) - (a.severity_pct||0));
+  else if (sort === 'sev_asc')  filtered.sort((a,b) => (a.severity_pct||0) - (b.severity_pct||0));
+  else if (sort === 'conf_asc') filtered.sort((a,b) => (a.confidence||0) - (b.confidence||0));
   else filtered.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
 
   currentPage = 1;
@@ -77,7 +90,7 @@ const page  = filtered.slice(start, start + PER_PAGE);
 
 if (!filtered.length) {
   tbody.innerHTML = `
-    <tr><td colspan="8">
+    <tr><td colspan="7">
       <div class="empty-state">
         <div class="empty-icon">
           <i data-lucide="inbox" style="width:32px;height:32px;color:var(--leaf)"></i>
@@ -113,7 +126,6 @@ tbody.innerHTML = page.map((r, i) => {
       <td style="color:var(--text-soft);font-size:12px;font-weight:700;">${idx}</td>
       <td>
         <div class="disease-cell">
-          <div class="disease-dot" style="background:${dotColor}"></div>
           <span class="disease-name">${r.predicted_class || '—'}</span>
         </div>
       </td>
@@ -134,12 +146,6 @@ tbody.innerHTML = page.map((r, i) => {
       <td style="font-size:12px;font-weight:600;color:var(--text-mid);max-width:180px;">${r.urgency || '—'}</td>
       <td class="date-cell">${dateStr}</td>
       <td>
-        <div class="row-actions">
-          <button class="btn-icon" title="View Details" onclick='showDetail(${JSON.stringify(r)})'>
-            <i data-lucide="eye" style="width:14px;height:14px;"></i>
-          </button>
-        </div>
-      </td>
     </tr>`;
 }).join('');
 
@@ -187,7 +193,7 @@ function renderPagination() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
-      // ── Modal ──
+      //  Modal 
       function showDetail(r) {
         const dateStr = r.created_at
           ? new Date(r.created_at).toLocaleString('en-IN')
@@ -209,29 +215,45 @@ function renderPagination() {
           document.getElementById('detailModal').classList.remove('open');
       }
 
-      // ── Export CSV ──
-      function exportCSV() {
-        if (!filtered.length) return;
-        const headers = ['#', 'Disease', 'Confidence(%)', 'Severity(%)', 'Stage', 'Urgency', 'Date'];
-        const rows = filtered.map((r, i) => [
-          i + 1,
-          `"${(r.predicted_class||'').replace(/"/g,'""')}"`,
-          r.confidence || 0,
-          r.severity_pct || 0,
-          r.stage || '',
-          `"${(r.urgency||'').replace(/"/g,'""')}"`,
-          r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : ''
-        ]);
-        const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
-        const a = document.createElement('a');
-        a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-        a.download = `LeafSense_History_${new Date().toISOString().slice(0,10)}.csv`;
-        a.click();
-      }
+//  Export CSV 
+function exportCSV(mode = 'filtered') {
+ const source = mode === 'all' ? allRecords : filtered;
+  if (!source.length) return;
+
+  const headers = ['#', 'Disease', 'Confidence(%)', 'Severity(%)', 'Stage', 'Urgency', 'Date'];
+  const rows = source.map((r, i) => [
+    i + 1,
+    `"${(r.predicted_class||'').replace(/"/g,'""')}"`,
+    r.confidence || 0,
+    r.severity_pct || 0,
+    r.stage || '',
+    `"${(r.urgency||'').replace(/"/g,'""')}"`,
+    r.created_at ? new Date(r.created_at).toLocaleString('en-IN') : ''
+  ]);
+
+  const csv = [headers, ...rows].map(r => r.join(',')).join('\n');
+  const suffix = mode === 'all' ? 'All' : 'Filtered';
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = `LeafSense_History_${suffix}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  document.getElementById('exportMenu').classList.remove('open');
+}
+
+function toggleExportMenu() {
+  document.getElementById('exportMenu').classList.toggle('open');
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  if (!document.getElementById('exportDropdown').contains(e.target)) {
+    document.getElementById('exportMenu').classList.remove('open');
+  }
+});
 
       function showError() {
         document.getElementById('historyTbody').innerHTML = `
-          <tr><td colspan="8">
+          <tr><td colspan="7">
             <div class="empty-state">
               <div class="empty-icon" style="background:var(--red-pale)">
                 <i data-lucide="wifi-off" style="width:32px;height:32px;color:var(--red)"></i>

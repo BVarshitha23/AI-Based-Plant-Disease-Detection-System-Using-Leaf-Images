@@ -1,6 +1,7 @@
 /* ── Split layout (mirrors login.html) ── */
       .auth-page {
-        min-height: 100vh;
+        height: 100vh;
+        overflow: hidden;
         display: grid;
         grid-template-columns: 1fr 1fr;
         background: var(--white);
@@ -98,11 +99,11 @@
       /* ── Right Panel — Form ── */
       .auth-form-panel {
         display: flex;
+        overflow: hidden;
         flex-direction: column;
         justify-content: center;
         padding: 48px 64px;
         background: var(--sky);
-        overflow-y: auto;
       }
 
       .auth-back-link {

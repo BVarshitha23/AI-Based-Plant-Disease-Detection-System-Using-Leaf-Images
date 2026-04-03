@@ -21,12 +21,10 @@ async function handleLogin(e) {
 
   if (result.ok) {
     showToast("success", "Signed in successfully!");
-
-    //  REDIRECT (no dashboard now)
     setTimeout(() => {
       window.location.href = "index.html";
     }, 700);
-  } else {
+} else {
     document.getElementById("authErrorMsg").textContent =
       result.error || "Invalid email or password.";
     errBox.classList.add("show");

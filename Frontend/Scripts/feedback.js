@@ -60,7 +60,7 @@ function checkStep1() {
   btn.disabled = !(selectedRating > 0 && selectedCategory !== '');
 }
 
-// ── Character counter ──
+// Character counter 
 document.getElementById('fbMessage').addEventListener('input', function () {
   const len = Math.min(this.value.length, 500);
   document.getElementById('charCount').textContent = len;

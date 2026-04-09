@@ -1,4 +1,4 @@
-/* ── Page Layout ── */
+/*  Page Layout  */
       .history-page {
         min-height: calc(100vh - 72px);
         background: var(--sky);
@@ -35,7 +35,7 @@
         flex-wrap: wrap;
       }
 
-      /* ── Stats Row ── */
+      /*  Stats Row  */
       .stats-row {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
@@ -83,7 +83,7 @@
         margin-top: 3px;
       }
 
-      /* ── Filters Bar ── */
+      /*  Filters Bar  */
       .filters-bar {
         background: var(--white);
         border: 2px solid var(--border);
@@ -171,7 +171,7 @@
         flex-shrink: 0;
       }
 
-      /* ── Table ── */
+      /*  Table  */
       .table-wrap {
         background: var(--white);
         border: 2px solid var(--border);

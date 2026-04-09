@@ -107,7 +107,6 @@ async function loadUsers() {
     const data = await res.json();
     allUsers   = data.users || [];
     document.getElementById('navBadgeUsers').textContent = allUsers.length;
-    // renderUsers(allUsers);
   } catch {
     document.getElementById('userCount').textContent = 'Failed to load.';
   }
@@ -121,7 +120,6 @@ async function loadDetections() {
     const data    = await res.json();
     allDetections = data.detections || [];
     document.getElementById('navBadgeDetections').textContent = allDetections.length;
-    renderDetections(allDetections);
   } catch {
     document.getElementById('detectCount').textContent = 'Failed to load.';
   }
@@ -136,7 +134,6 @@ async function loadFeedback() {
     allFeedback = data.feedback || [];
     document.getElementById('navBadgeFeedback').textContent = allFeedback.length;
     computeFeedbackStats();
-    renderFeedbackList(allFeedback);
   } catch {
     document.getElementById('resultsCount').textContent = 'Failed to load.';
   }
@@ -145,10 +142,9 @@ async function loadFeedback() {
 
 //  OVERVIEW
 function renderOverview() {
-    renderUsers(allUsers);
-    renderDetections(allDetections);
-    renderFeedbackList(allFeedback);
-   
+  renderUsers(allUsers);
+  renderDetections(allDetections);
+  renderFeedbackList(allFeedback);
   // Users
   document.getElementById('ovUsers').textContent = allUsers.length;
   const newUsers = allUsers.filter(u => isThisWeek(u.created_at)).length;
@@ -231,7 +227,7 @@ function renderUsers(users) {
 
   const tbody = document.getElementById('usersBody');
   if (!users.length) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-soft)">No users found</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-soft)">No users found</td></tr>`;
     return;
   }
 
@@ -253,16 +249,49 @@ function renderUsers(users) {
           ? '<span class="ad-badge ad-badge--amber">Admin</span>'
           : '<span class="ad-badge ad-badge--gray">User</span>'}
       </td>
-      <td>
+      <td style="display:flex;gap:8px;align-items:center">
         <button class="ad-view-btn" onclick="event.stopPropagation();viewUser(${u.id})">
           <i data-lucide="eye" style="width:12px;height:12px"></i>
           View
+        </button>
+      </td>
+      <td>
+        <button class="ad-view-btn ${u.is_admin ? 'ad-btn--danger' : 'ad-btn--promote'}"
+          onclick="event.stopPropagation();toggleAdmin(${u.id}, ${u.is_admin})">
+          <i data-lucide="${u.is_admin ? 'shield-off' : 'shield-check'}" style="width:12px;height:12px"></i>
+          ${u.is_admin ? 'Demote' : 'Make Admin'}
         </button>
       </td>
     </tr>`;
   }).join('');
 
   lucide.createIcons();
+}
+
+async function toggleAdmin(userId, isCurrentlyAdmin) {
+  const action = isCurrentlyAdmin ? 'demote' : 'promote';
+  const confirmed = confirm(`Are you sure you want to ${action} this user?`);
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`/admin/users/${userId}/toggle-admin`, {
+      method: 'PATCH',
+      headers: authHeaders(),
+      body: JSON.stringify({ is_admin: !isCurrentlyAdmin })
+    });
+
+    if (res.status === 401) { adminLogout(); return; }
+
+    if (res.ok) {
+      await loadUsers();
+      renderUsers(allUsers);
+    } else {
+      const err = await res.json();
+      alert(err.message || 'Failed to update user role.');
+    }
+  } catch (e) {
+    alert('Network error. Please try again.');
+  }
 }
 
 function filterUsers() {
@@ -298,7 +327,7 @@ function viewUser(userId) {
 
   const tbody = document.getElementById('userDetectBody');
   if (!detects.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-soft)">No detections yet</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-soft)">No detections yet</td></tr>`;
   } else {
     tbody.innerHTML = detects.map((d, i) => `
       <tr>

@@ -1,4 +1,4 @@
-/* ── Date formatter ── */
+/*  Date formatter  */
 function formatJoinedDate(value) {
   if (!value) return "-";
   const parsed = new Date(value);
@@ -10,7 +10,7 @@ function formatJoinedDate(value) {
   });
 }
 
-/* ── Render basic profile info ── */
+/* Render basic profile info  */
 function renderProfile(user) {
   document.getElementById("profileName").textContent = user.username || "User";
   document.getElementById("profileEmail").textContent = user.email || "";
@@ -19,7 +19,7 @@ function renderProfile(user) {
   document.getElementById("detailCreatedAt").textContent = formatJoinedDate(user.created_at);
 }
 
-/* ── Detection stats ── */
+/*  Detection stats  */
 async function loadDetectionStats() {
   try {
     const token = Session.getUser()?.token;
@@ -57,7 +57,7 @@ async function loadDetectionStats() {
   }
 }
 
-/* ── Load profile ── */
+/*  Load profile  */
 async function loadProfile() {
   if (!Session.requireAuth()) return;
 
@@ -78,7 +78,7 @@ async function loadProfile() {
   loadDetectionStats();
 }
 
-/* ── Toggle password visibility ── */
+/* Toggle password visibility  */
 function togglePwd(inputId, btn) {
   const input = document.getElementById(inputId);
   const isHidden = input.type === "password";
@@ -89,7 +89,7 @@ function togglePwd(inputId, btn) {
   lucide.createIcons();
 }
 
-/* ── Change password ── */
+/* Change password  */
 async function changePassword() {
   const current = document.getElementById("pwdCurrent").value.trim();
   const newPwd  = document.getElementById("pwdNew").value.trim();
@@ -145,7 +145,7 @@ async function changePassword() {
   }
 }
 
-/* ── Delete account modal ── */
+/* Delete account modal  */
 function showDeleteConfirm() {
   document.getElementById("deleteModal").style.display = "flex";
   document.getElementById("deleteConfirmInput").value  = "";
@@ -178,7 +178,7 @@ async function deleteAccount() {
   }
 }
 
-/* ── DOMContentLoaded ── */
+/* DOMContentLoaded  */
 document.addEventListener("DOMContentLoaded", () => {
   loadProfile();
 

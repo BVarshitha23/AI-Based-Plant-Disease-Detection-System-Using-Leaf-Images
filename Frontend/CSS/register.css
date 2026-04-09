@@ -1,4 +1,4 @@
-/* ── Split layout (mirrors login.html) ── */
+/*  Split layout (mirrors login.html)  */
       .auth-page {
         height: 100vh;
         overflow: hidden;
@@ -7,7 +7,7 @@
         background: var(--white);
       }
 
-      /* ── Left Panel ── */
+      /*  Left Panel  */
       .auth-panel {
         background: linear-gradient(145deg, #1b5e20 0%, #2e7d32 45%, #388e3c 100%);
         display: flex;
@@ -96,7 +96,7 @@
       }
       .panel-tagline em { font-style: italic; color: #a5d6a7; }
 
-      /* ── Right Panel — Form ── */
+      /*  Right Panel — Form  */
       .auth-form-panel {
         display: flex;
         overflow: hidden;
@@ -265,7 +265,7 @@
       }
       .btn-nav-login:hover { background: #1b5e20; transform: translateY(-1px); }
 
-      /* ── Responsive ── */
+      /*  Responsive  */
       @media (max-width: 820px) {
         .auth-page { grid-template-columns: 1fr; }
         .auth-panel { display: none; }

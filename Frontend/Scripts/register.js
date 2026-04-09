@@ -69,7 +69,7 @@ async function handleRegister(e) {
   const result = await Session.register(name, email, password);
 
   if (result.ok) {
-    Session.logout(); // ← clear any accidental session
+    Session.logout(); 
     showToast("success", "Account created! Please sign in.");
     setTimeout(() => window.location.href = "login.html", 800); 
   } else {

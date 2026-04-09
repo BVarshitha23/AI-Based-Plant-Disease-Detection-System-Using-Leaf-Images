@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-
 import bcrypt
 import cv2
 import io
@@ -12,7 +11,12 @@ import psycopg2
 import threading
 import time
 import webbrowser
-from typing import Optional
+import re
+import httpx
+import smtplib
+import random
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from psycopg2.extras import RealDictCursor
 import uvicorn
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
@@ -26,41 +30,79 @@ from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 from dotenv import load_dotenv
+from groq import Groq
 
 load_dotenv()
 
-# ── CONFIG ──
+#  CONFIG
 MODEL_PATH   = r"D:\Custom_dataset\Output\mobilenetv2_unfreeze50_best.keras"
 JSON_PATH    = r"D:\Custom_dataset\Output\class_labels.json"
 IMG_SIZE     = (224, 224)
 TTA_STEPS    = 5
 FRONTEND_DIR = r"D:\fastapi practice\Frontend"
 
-# ── JWT CONFIG ──
-SECRET_KEY          = os.getenv("SECRET_KEY")
+#  JWT CONFIG
+SECRET_KEY = os.environ["SECRET_KEY"]
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY is not set in .env — server cannot start")
 ALGORITHM           = "HS256"
 ACCESS_TOKEN_EXPIRE = timedelta(days=1)
 bearer_scheme       = HTTPBearer(auto_error=False)
 
-# ── DB CONFIG ──
+#  GROQ CONFIG 
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
+if GROQ_API_KEY:
+    groq_client = Groq(api_key=GROQ_API_KEY)
+    print("  Groq AI ready")
+else:
+    groq_client = None
+    print("  GROQ_API_KEY not set — /groq-advice will return 503")
+
+RECAPTCHA_SECRET = os.environ.get("RECAPTCHA_SECRET_KEY")
+
+#  DB CONFIG 
 DB_CONFIG = {
-    "host":     os.getenv("DB_HOST"),
-    "port":     int(os.getenv("DB_PORT", "5432")),
-    "dbname":   os.getenv("DB_NAME"),
-    "user":     os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
+    "host":     os.environ.get("DB_HOST"),
+    "port":     int(os.environ.get("DB_PORT", "5432")),
+    "dbname":   os.environ.get("DB_NAME"),
+    "user":     os.environ.get("DB_USER"),
+    "password": os.environ.get("DB_PASSWORD"),
 }
 
+# In-memory OTP store {email: {otp, expires}}
+otp_store: dict = {}
 
-# ── DB HELPERS ──
+def send_otp_email(to_email: str, otp: str) -> None:
+    gmail_user = os.environ["GMAIL_USER"]
+    gmail_pass = os.environ["GMAIL_APP_PASSWORD"]
+
+    msg = MIMEMultipart("alternative")
+    msg["Subject"] = "LeafSense - Password Reset OTP"
+    msg["From"]    = gmail_user
+    msg["To"]      = to_email
+
+    html = f"""
+    <div style="font-family:sans-serif;max-width:400px;margin:auto;padding:32px;border-radius:12px;background:#f9fafb;border:1px solid #e5e7eb;">
+      <h2 style="color:#166534;">LeafSense</h2>
+      <p>Your OTP for password reset is:</p>
+      <div style="font-size:36px;font-weight:800;letter-spacing:8px;color:#166534;margin:24px 0;">{otp}</div>
+      <p style="color:#6b7280;font-size:13px;">This OTP expires in <b>10 minutes</b>. Do not share it with anyone.</p>
+    </div>
+    """
+    msg.attach(MIMEText(html, "html"))
+
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
+        smtp.login(gmail_user, gmail_pass)
+        smtp.sendmail(gmail_user, to_email, msg.as_string())
+
+
+#  DB HELPERS 
 
 def get_db() -> psycopg2.extensions.connection:
-    """Returns a new PostgreSQL connection with dict-style rows."""
     return psycopg2.connect(**DB_CONFIG, cursor_factory=RealDictCursor)
 
 
 def init_db() -> None:
-    """Creates tables if they don't exist and adds is_admin column if missing."""
     conn = get_db()
     cur  = conn.cursor()
     try:
@@ -74,7 +116,6 @@ def init_db() -> None:
                 created_at TIMESTAMPTZ  DEFAULT NOW()
             );
         """)
-        # Safe migration for existing tables
         cur.execute("""
             ALTER TABLE users
             ADD COLUMN IF NOT EXISTS is_admin BOOLEAN DEFAULT FALSE;
@@ -109,7 +150,7 @@ def init_db() -> None:
         conn.close()
 
 
-# ── AUTH HELPERS ──
+#  AUTH HELPERS 
 
 def serialize_user(user: dict) -> dict:
     created = user.get("created_at")
@@ -123,7 +164,6 @@ def serialize_user(user: dict) -> dict:
 
 
 def create_access_token(user: dict) -> str:
-    """Creates a JWT for both normal users and admins — is_admin flag is embedded."""
     expire = datetime.now(timezone.utc) + ACCESS_TOKEN_EXPIRE
     payload = {
         "user_id":  user["id"],
@@ -147,7 +187,6 @@ def decode_access_token(token: str) -> dict:
 def get_current_user(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> dict:
-    """Validates JWT and returns the current user (works for both admin and normal user)."""
     if credentials is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
 
@@ -177,10 +216,6 @@ def get_current_user(
 def verify_admin(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> dict:
-    """
-    Admin guard — reuses the same JWT, just checks is_admin = True.
-    Admin can also use all normal user routes via get_current_user().
-    """
     if credentials is None:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
@@ -195,7 +230,7 @@ def verify_admin(
     return payload
 
 
-# ── ML HELPERS ──
+#  ML HELPERS 
 
 def format_label(label: str) -> str:
     return label.replace("___", " - ").replace("_", " ").title()
@@ -263,7 +298,7 @@ def calculate_severity(image_bytes: bytes, predicted_label: str) -> dict:
     return {"severity_pct": severity_pct, "stage": stage, "urgency": urgency}
 
 
-# ── LOAD MODEL & CLASS LABELS ──
+#  LOAD MODEL & CLASS LABELS 
 print("\n  Loading model...")
 model = load_model(MODEL_PATH)
 print("  Model loaded")
@@ -274,8 +309,7 @@ with open(JSON_PATH, "r") as f:
 print(f"  {len(class_indices)} classes loaded\n")
 
 
-# ── PYDANTIC MODELS ──
-
+#  PYDANTIC MODELS 
 class SignupRequest(BaseModel):
     username: str
     email:    str
@@ -283,9 +317,10 @@ class SignupRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    email:    str | None = None
-    username: str | None = None
-    password: str
+    email:         str | None = None
+    username:      str | None = None
+    password:      str
+    captcha_token: str = ""
 
 
 class FeedbackRequest(BaseModel):
@@ -295,7 +330,33 @@ class FeedbackRequest(BaseModel):
     is_farmer: bool = False
 
 
-# ── FASTAPI APP ──
+class AIAdviceRequest(BaseModel):
+    predicted_class: str
+    confidence:      float
+    severity_pct:    float
+    stage:           str
+    urgency:         str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class VerifyOTPRequest(BaseModel):
+    email: str
+    otp:   str
+
+class ResetPasswordRequest(BaseModel):
+    email:    str
+    otp:      str
+    password: str
+
+class TranslateRequest(BaseModel):
+    predicted_class: str
+    severity_pct:    float
+    stage:           str
+    lang:            str   
+
+
+#  FASTAPI APP 
 app = FastAPI(title="Plant Disease Detection")
 
 app.add_middleware(
@@ -313,7 +374,7 @@ def startup() -> None:
     init_db()
 
 
-# ── FRONTEND ROUTES ──
+#  FRONTEND ROUTES 
 
 @app.get("/")
 def serve_login_page():
@@ -340,7 +401,7 @@ def serve_admin():
     return FileResponse(f"{FRONTEND_DIR}/admin.html")
 
 
-# ── AUTH ROUTES ──
+#  AUTH ROUTES 
 
 @app.post("/auth/signup", status_code=status.HTTP_201_CREATED)
 def signup(body: SignupRequest):
@@ -382,10 +443,15 @@ def signup(body: SignupRequest):
 
 
 @app.post("/auth/login")
-def login(body: LoginRequest):
+async def login(body: LoginRequest):
     identifier = (body.email or body.username or "").strip().lower()
     if not identifier:
         raise HTTPException(status_code=400, detail="Email or username is required")
+
+    #  verify reCAPTCHA 
+    captcha_ok = await verify_recaptcha(body.captcha_token)
+    if not captcha_ok:
+        raise HTTPException(status_code=400, detail="CAPTCHA verification failed. Please try again.")
 
     conn = get_db()
     cur  = conn.cursor()
@@ -427,8 +493,102 @@ def login(body: LoginRequest):
 def read_current_user(current_user: dict = Depends(get_current_user)):
     return {"user": serialize_user(current_user)}
 
+@app.post("/auth/forgot-password")
+def forgot_password(body: ForgotPasswordRequest):
+    email = body.email.strip().lower()
 
-# ── PREDICT ROUTE ──
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("SELECT id FROM users WHERE lower(email) = %s", (email,))
+        if not cur.fetchone():
+            # Don't reveal if email exists
+            return {"message": "If this email exists, an OTP has been sent."}
+    finally:
+        cur.close()
+        conn.close()
+
+    otp     = str(random.randint(100000, 999999))
+    expires = datetime.now(timezone.utc) + timedelta(minutes=10)
+    otp_store[email] = {"otp": otp, "expires": expires}
+
+    try:
+        send_otp_email(email, otp)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to send email: {str(e)}")
+
+    return {"message": "If this email exists, an OTP has been sent."}
+
+
+@app.post("/auth/verify-otp")
+def verify_otp(body: VerifyOTPRequest):
+    email = body.email.strip().lower()
+    entry = otp_store.get(email)
+
+    if not entry:
+        raise HTTPException(status_code=400, detail="No OTP requested for this email")
+    if datetime.now(timezone.utc) > entry["expires"]:
+        otp_store.pop(email, None)
+        raise HTTPException(status_code=400, detail="OTP has expired")
+    if entry["otp"] != body.otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+
+    return {"message": "OTP verified"}
+
+
+@app.post("/auth/reset-password")
+def reset_password(body: ResetPasswordRequest):
+    email = body.email.strip().lower()
+    entry = otp_store.get(email)
+
+    if not entry:
+        raise HTTPException(status_code=400, detail="No OTP verified for this email")
+    if datetime.now(timezone.utc) > entry["expires"]:
+        otp_store.pop(email, None)
+        raise HTTPException(status_code=400, detail="OTP has expired")
+    if entry["otp"] != body.otp:
+        raise HTTPException(status_code=400, detail="Invalid OTP")
+    if len(body.password) < 8:
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+
+    hashed = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode()
+
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute(
+            "UPDATE users SET password = %s WHERE lower(email) = %s",
+            (hashed, email)
+        )
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    otp_store.pop(email, None)
+    return {"message": "Password reset successfully"}
+
+async def verify_recaptcha(token: str) -> bool:
+    if not RECAPTCHA_SECRET:
+        return True  # skip if not configured
+    if not token:
+        return False
+    async with httpx.AsyncClient() as client:
+        res = await client.post(
+            "https://www.google.com/recaptcha/api/siteverify",
+            data={
+                "secret":   RECAPTCHA_SECRET,
+                "response": token,
+            }
+        )
+        result = res.json()
+        return result.get("success", False)
+
+
+#  PREDICT ROUTE
 
 @app.post("/predict")
 async def predict(
@@ -478,7 +638,157 @@ async def predict(
     }
 
 
-# ── HISTORY ROUTE ──
+#  GROQ AI ADVICE ROUTE 
+
+@app.post("/gemini-advice")
+async def gemini_advice(
+    body:         AIAdviceRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    if groq_client is None:
+        raise HTTPException(status_code=503, detail="Groq API key not configured")
+
+    is_healthy = "healthy" in body.predicted_class.lower()
+
+    if is_healthy:
+        prompt = f"""You are an expert agronomist assistant helping Indian farmers.
+
+A plant disease detection system has scanned a plant leaf and found it is HEALTHY.
+Plant: {body.predicted_class}
+Confidence: {body.confidence}%
+
+Respond ONLY with a JSON object (no markdown, no extra text) with these exact keys:
+{{
+  "summary": "One friendly sentence congratulating the farmer and encouraging continued care.",
+  "what_is_this": "Brief 2-sentence explanation of what the healthy status means.",
+  "immediate_actions": ["action1", "action2", "action3"],
+  "prevention_tips": ["tip1", "tip2", "tip3"],
+  "farmer_tip": "One practical tip specific to growing this crop well in India.",
+  "risk_level": "None"
+}}"""
+    else:
+        prompt = f"""You are an expert agronomist assistant helping Indian farmers.
+
+A plant disease detection ML model has diagnosed the following:
+- Disease: {body.predicted_class}
+- Confidence: {body.confidence}%
+- Severity: {body.severity_pct}% of leaf infected
+- Stage: {body.stage}
+- Urgency: {body.urgency}
+
+Respond ONLY with a JSON object (no markdown, no extra text) with these exact keys:
+{{
+  "summary": "One urgent but calm sentence summarising the situation for a farmer.",
+  "what_is_this": "2-sentence plain-language explanation of this disease: what it is and how it spreads.",
+  "immediate_actions": ["Specific action 1 with dosage/timing", "Specific action 2", "Specific action 3"],
+  "prevention_tips": ["Prevention tip 1 for next season", "Prevention tip 2", "Prevention tip 3"],
+  "farmer_tip": "One local/practical tip relevant to Indian farming conditions.",
+  "risk_level": "{body.stage}"
+}}
+
+Be specific, practical, and use simple language. Include specific fungicide/pesticide names where relevant."""
+
+    try:
+        print(f"[Groq] Calling API for: {body.predicted_class}")
+
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are an expert agronomist. Always respond with valid JSON only. No markdown, no explanation, just the JSON object."
+                },
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            max_tokens=1000,
+            temperature=0.3,
+        )
+
+        raw_text = (response.choices[0].message.content or "").strip()
+        print(f"[Groq] Raw response: {raw_text[:200]}")
+
+        # Strip markdown fences if present
+        raw_text = re.sub(r"^```(?:json)?\s*\n?", "", raw_text)
+        raw_text = re.sub(r"\n?```\s*$", "", raw_text)
+        raw_text = raw_text.strip()
+
+        advice = json.loads(raw_text)
+
+        return {
+            "success": True,
+            "advice":  advice,
+            "model":   "llama-3.1-8b-instant",
+        }
+
+    except json.JSONDecodeError as e:
+        print(f"[Groq] JSON parse error: {e}")
+        print(f"[Groq] Raw text was: {raw_text}")
+        return {
+            "success": False,
+            "advice":  {"summary": raw_text},
+            "model":   "llama-3.1-8b-instant",
+            "error":   f"JSON parse error: {str(e)}",
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[Groq] Exception: {type(e).__name__}: {str(e)}")
+
+        if "rate_limit" in str(e).lower() or "429" in str(e):
+            raise HTTPException(
+                status_code=429,
+                detail="AI quota exceeded. Please try again in a minute."
+            )
+
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+    
+@app.post("/api/translate")
+async def translate_result(
+    body:         TranslateRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    if groq_client is None:
+        raise HTTPException(status_code=503, detail="Groq not configured")
+
+    lang_names = {"hi": "Hindi", "te": "Telugu", "ta": "Tamil", "kn": "Kannada"}
+    lang_name  = lang_names.get(body.lang)
+    if not lang_name:
+        raise HTTPException(status_code=400, detail="Unsupported language")
+
+    is_healthy = "healthy" in body.predicted_class.lower()
+
+    if is_healthy:
+        source = "Your plant is healthy! No disease detected. Continue regular care and monitor weekly."
+    else:
+        source = (
+            f"Your plant has {body.predicted_class} at {body.stage.lower()} stage — "
+            f"{body.severity_pct}% of the leaf is infected. "
+            f"Follow the treatment steps shown immediately."
+        )
+
+    prompt = f"Translate this exactly to {lang_name}. Return ONLY the translated text, nothing else:\n\n{source}"
+
+    try:
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {"role": "system", "content": f"You are a translator. Translate to {lang_name} only. Return only the translated text with no explanation."},
+                {"role": "user",   "content": prompt}
+            ],
+            max_tokens=300,
+            temperature=0.1,
+        )
+        translated = (response.choices[0].message.content or "").strip()
+        return {"translated": translated, "lang": body.lang}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Translation error: {str(e)}")
+
+
+#  HISTORY ROUTE 
 
 @app.get("/api/history")
 def get_history(current_user: dict = Depends(get_current_user)):
@@ -512,7 +822,7 @@ def get_history(current_user: dict = Depends(get_current_user)):
     return {"records": records}
 
 
-# ── FEEDBACK ROUTE ──
+#  FEEDBACK ROUTE 
 
 @app.post("/feedback", status_code=201)
 def submit_feedback(
@@ -551,7 +861,7 @@ def submit_feedback(
     return {"message": "Feedback submitted successfully"}
 
 
-# ── ADMIN ROUTES ──
+#  ADMIN ROUTES 
 
 @app.get("/admin/feedback")
 def get_all_feedback(
@@ -559,7 +869,6 @@ def get_all_feedback(
     limit:  int  = 500,
     offset: int  = 0,
 ):
-    """Returns all feedback — admin only."""
     conn = get_db()
     cur  = conn.cursor()
     try:
@@ -598,7 +907,6 @@ def get_all_users(
     limit:  int  = 500,
     offset: int  = 0,
 ):
-    """Returns all registered users — admin only."""
     conn = get_db()
     cur  = conn.cursor()
     try:
@@ -634,7 +942,6 @@ def get_all_detections(
     limit:  int  = 1000,
     offset: int  = 0,
 ):
-    """Returns all predictions across all users — admin only."""
     conn = get_db()
     cur  = conn.cursor()
     try:
@@ -673,7 +980,6 @@ def toggle_admin(
     user_id: int,
     _admin:  dict = Depends(verify_admin),
 ):
-    """Promote or demote a user's admin status — admin only."""
     conn = get_db()
     cur  = conn.cursor()
     try:
@@ -704,7 +1010,7 @@ def toggle_admin(
     }
 
 
-# ── STATIC FILE FALLBACK ──
+# STATIC FILE FALLBACK 
 
 @app.get("/{filename:path}")
 def serve_file(filename: str):
@@ -714,7 +1020,7 @@ def serve_file(filename: str):
     return FileResponse(f"{FRONTEND_DIR}/login.html")
 
 
-# ── RUN APP ──
+#  RUN APP 
 if __name__ == "__main__":
     def open_browser():
         time.sleep(2)

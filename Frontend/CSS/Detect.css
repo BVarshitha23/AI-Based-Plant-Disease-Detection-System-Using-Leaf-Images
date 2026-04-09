@@ -56,8 +56,9 @@ body {
   padding: 0;
   border-style: solid;
   border-color: var(--leaf);
-  min-height: 300px;
+  min-height: unset;      
 }
+
 
 .dz-icon {
   font-size: 56px;
@@ -102,9 +103,9 @@ body {
 
 .preview-img {
   width: 100%;
-  min-height: 300px;
-  max-height: 300px;
-  object-fit: cover;
+  height: auto;           
+  max-height: none;      
+  object-fit: contain;    
   border-radius: 19px;
   display: none;
 }
@@ -301,7 +302,7 @@ body {
 /* Result Grid  */
 .result-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 18px;
 }
 
@@ -313,7 +314,7 @@ body {
 }
 
 .lang-card {
-  grid-column: 1 / -1;
+  grid-column: 1;
 }
 
 .res-card-title {
@@ -807,13 +808,303 @@ body {
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
 
+
+#geminiCard {
+  margin-top: 18px;
+  background-color: var(--white);
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  
+}
+
+.gemini-card {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: var(--white);
+  animation: fadeSlideUp 0.5s ease both;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.gemini-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--white);
+  border-bottom: 2px solid var(--border);
+}
+
+.gemini-logo {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, var(--leaf), var(--leaf-light));
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gemini-header-text {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--leaf);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-family: 'Nunito', sans-serif;
+}
+
+.gemini-header-sub {
+  font-size: 0.7rem;
+  color: var(--text-soft);
+  margin-left: auto;
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Body */
+.gemini-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Summary box */
+.gemini-summary {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+  font-weight: 600;
+  padding: 13px 16px;
+  background: var(--leaf-pale);
+  border-radius: 11px;
+  border-left: 4px solid var(--leaf);
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Section titles */
+.gemini-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* What is this */
+.gemini-what {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Immediate actions */
+.gemini-actions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.gemini-action-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 13px;
+  background: var(--sky);
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--leaf);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+.gemini-action-num {
+  font-weight: 800;
+  color: var(--leaf);
+  font-size: 0.82rem;
+  min-width: 18px;
+  padding-top: 1px;
+  flex-shrink: 0;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Prevention tips */
+.gemini-tips-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.gemini-tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.87rem;
+  line-height: 1.55;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+.gemini-tip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--leaf);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+/* Farmer tip */
+.gemini-farmer-tip {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--amber-pale);
+  border-radius: 11px;
+  border-left: 4px solid var(--amber-bdr);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+.gemini-farmer-emoji {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Loading state */
+.gemini-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  font-size: 0.88rem;
+  color: var(--leaf);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+.gemini-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--leaf-pale);
+  border-top-color: var(--leaf);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Error state */
+.gemini-error {
+  padding: 14px 18px;
+  font-size: 0.85rem;
+  color: var(--red);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Treatment loading skeleton */
+.treat-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--leaf);
+  background: var(--leaf-pale);
+  border-radius: 11px;
+  border: 1px dashed var(--border);
+}
+
+.treat-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--leaf-pale);
+  border-top-color: var(--leaf);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+ 
+@keyframes spin { to { transform: rotate(360deg); } }
+ 
+.gemini-error {
+  padding: 14px 18px;
+  font-size: 0.85rem;
+  color: #ea4335;
+  opacity: 0.8;
+}
+
+/* Treatment loading skeleton (shown while Gemini fetches) */
+.treat-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #4285f4;
+  background: rgba(66,133,244,0.06);
+  border-radius: 10px;
+  border: 1px dashed rgba(66,133,244,0.25);
+}
+
+.treat-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(66,133,244,0.2);
+  border-top-color: #4285f4;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Gemini card — full width below result-grid */
+#geminiCard {
+  margin-top: 18px;
+}
+
+.gemini-card {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 1px solid rgba(66, 133, 244, 0.25);
+  background: linear-gradient(135deg,
+    rgba(66,133,244,0.06) 0%,
+    rgba(52,168,83,0.06) 100%
+  );
+  animation: fadeSlideUp 0.5s ease both;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* Mobile tweaks */
 @media (max-width: 600px) {
   .cam-modal { border-radius: 16px; }
   .cam-video { max-height: 260px; }
   .cam-tip   { display: none; }
 }
-/* ── Responsive ── */
+/* Responsive  */
 @media (max-width: 768px) {
   .upload-section        { padding: 20px 16px; }
   .result-section        { padding: 0 16px 32px; }
@@ -835,4 +1126,21 @@ body {
   .scan-again-btn        { width: 100%; justify-content: center; }
   .upload-options        { flex-direction: column; }
   .upload-opt-btn        { width: 100%; justify-content: center; }
+}
+
+@media (min-width: 600px) {
+  .res-card.sev-card {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    grid-template-rows: auto auto auto;
+    column-gap: 20px;
+    align-items: start;
+  }
+ 
+  .res-card.sev-card .res-card-title { grid-column: 1 / -1; }
+  .res-card.sev-card .sev-num        { grid-column: 1; grid-row: 2; }
+  .res-card.sev-card .sev-sub        { grid-column: 1; grid-row: 3; margin-top: 2px; }
+  .res-card.sev-card .sev-badge      { grid-column: 2; grid-row: 2; align-self: center; }
+  .res-card.sev-card .sev-bar-bg     { grid-column: 2; grid-row: 3; align-self: center; margin-bottom: 0; }
+  .res-card.sev-card .sev-stages     { grid-column: 1 / -1; margin-top: 14px; }
 }

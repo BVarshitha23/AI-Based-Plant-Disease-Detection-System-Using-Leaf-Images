@@ -36,7 +36,7 @@ body {
   min-height: 100vh;
 }
 
-/* ── Navbar ── */
+/*  Navbar  */
 .navbar {
   display: flex;
   align-items: center;
@@ -93,7 +93,7 @@ body {
 .nav-links a:hover  { color: var(--leaf); }
 .nav-links a.active { color: var(--leaf); }
 
-/* ── Nav right (desktop profile / login area) ── */
+/*  Nav right (desktop profile / login area)  */
 .nav-right {
   display: flex;
   align-items: center;
@@ -226,7 +226,7 @@ body {
   transform: translateY(-1px);
 }
 
-/* ── Hamburger button ── */
+/* Hamburger button  */
 .hamburger {
   display: none;
   flex-direction: column;
@@ -250,7 +250,7 @@ body {
 .hamburger.open span:nth-child(2) { opacity: 0; }
 .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
 
-/* ── Mobile nav drawer ── */
+/*  Mobile nav drawer  */
 .mobile-nav {
   display: none;
   flex-direction: column;
@@ -380,7 +380,7 @@ body {
 .toast-error         { background: var(--red);  }
 .toast i             { flex-shrink: 0; }
 
-/* ── Responsive: Tablet (≤768px) ── */
+/*  Responsive: Tablet (≤768px)  */
 @media (max-width: 768px) {
   .navbar            { padding: 12px 20px; }
   .nav-links         { display: none; }
@@ -392,7 +392,7 @@ body {
   .site-footer       { padding: 20px 20px; }
 }
 
-/* ── Responsive: Mobile (≤480px) ── */
+/*  Responsive: Mobile (≤480px)  */
 @media (max-width: 480px) {
   .navbar      { padding: 10px 16px; }
   .logo-text   { font-size: 16px; }

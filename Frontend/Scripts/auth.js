@@ -23,12 +23,12 @@ const Session = {
   },
 
   //  Login 
-  login: async (email, password) => {
+  login: async (email, password, captchaToken = "") => {
     try {
       const res = await fetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, captcha_token: captchaToken }),
       });
 
       const data = await res.json();

@@ -210,6 +210,28 @@ body {
   flex-direction: column;
 }
 
+.ad-btn--promote {
+  background: var(--leaf-pale);
+  color: var(--leaf);
+  border-color: var(--border);
+}
+.ad-btn--promote:hover {
+  background: var(--leaf);
+  color: #fff;
+  border-color: var(--leaf);
+}
+
+.ad-btn--danger {
+  background: var(--red-pale);
+  color: var(--red);
+  border-color: #ef9a9a;
+}
+.ad-btn--danger:hover {
+  background: var(--red);
+  color: #fff;
+  border-color: var(--red);
+}
+
 /* Topbar */
 .ad-topbar {
   background: var(--white);

@@ -469,7 +469,7 @@
 }
 
 /*  RESPONSIVE */
-@media (max-width: 768px) {
+@media (max-width: 860px) {
   .ab-hero          { padding: 52px 20px 48px; }
   .ab-hero h1       { font-size: 32px; }
   .ab-hero p        { font-size: 14px; }

@@ -143,7 +143,7 @@ tbody.innerHTML = page.map((r, i) => {
       <td>
         <span class="stage-badge ${stageClass}">${stage}</span>
       </td>
-      <td style="font-size:12px;font-weight:600;color:var(--text-mid);max-width:180px;">${r.urgency || '—'}</td>
+      <td class="urgency-cell" style="font-size:12px;font-weight:600;color:var(--text-mid);max-width:180px;">${r.urgency || '—'}</td>
       <td class="date-cell">${dateStr}</td>
       <td>
     </tr>`;

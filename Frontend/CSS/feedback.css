@@ -1,3 +1,9 @@
+body {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
 /* HERO BANNER  */
 .fb-hero {
   background: linear-gradient(135deg, #0f2d12 0%, #1b5e20 45%, #2e7d32 80%, #388e3c 100%);
@@ -95,6 +101,7 @@
   margin-top: 55px;
   position: relative;
   z-index: 3;
+  flex: 1;
 }
 
 /* Form card */
@@ -511,18 +518,20 @@
 .fb-home-link:hover { color: var(--leaf); }
 
 /*  RESPONSIVE  */
+@media (max-width: 860px) {
+  .fb-hero       { padding: 44px 20px 60px; }
+  .fb-hero-title { font-size: 30px; }
+  .fb-hero-sub   { font-size: 14px; }
+  .fb-form-card  { padding: 30px 24px 26px; }
+}
+
 @media (max-width: 640px) {
-  .fb-hero { padding: 44px 20px 60px; }
+  .fb-hero       { padding: 44px 20px 60px; }
   .fb-hero-title { font-size: 28px; }
-  .fb-hero-sub { font-size: 13px; }
+  .fb-hero-sub   { font-size: 13px; }
   .fb-hero-pills { gap: 8px; }
-
-  .fb-body { padding: 0 16px 48px; margin-top: -28px; }
-
-  .fb-form-card {
-    padding: 28px 20px 24px;
-    border-radius: 18px;
-  }
+  .fb-body       { padding: 0 16px 48px; margin-top: -28px; }
+  .fb-form-card  { padding: 28px 20px 24px; border-radius: 18px; }
 }
 
 @media (max-width: 480px) {

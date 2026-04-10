@@ -65,10 +65,15 @@ function initNavbar(page) {
       </div>
     `;
 
-    // Mobile: logout button inside drawer
-    mobileNavAuth.innerHTML = `
-      <button class="mobile-nav-logout" onclick="navLogout()">Logout</button>
-    `;
+    // Mobile: admin link (if admin) + logout button inside drawer
+mobileNavAuth.innerHTML = `
+  ${isAdmin ? `
+    <a href="admin.html" class="mobile-nav-admin">
+      <i data-lucide="shield" style="width:15px;height:15px"></i>
+      Admin Dashboard
+    </a>` : ''}
+  <button class="mobile-nav-logout" onclick="navLogout()">Logout</button>
+`;
 
     // Dropdown open/close
     document.getElementById('profileBtn').addEventListener('click', e => {

@@ -49,3 +49,7 @@ class TranslateRequest(BaseModel):
     severity_pct:    float
     stage:           str
     lang:            str
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password:     str

@@ -25,6 +25,7 @@ from Schemas import (
     ResetPasswordRequest,
     SignupRequest,
     VerifyOTPRequest,
+    ChangePasswordRequest,
 )
 
 #  BEARER SCHEME 
@@ -125,7 +126,7 @@ def get_current_user(
 
     return dict(user)
 
-
+# ADMIN VERIFICATION
 def verify_admin(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> dict:
@@ -196,7 +197,7 @@ def signup(body: SignupRequest):
 
     return {"message": "Account created successfully"}
 
-
+# LOGIN
 @router.post("/login")
 async def login(body: LoginRequest):
     identifier = (body.email or body.username or "").strip().lower()
@@ -247,7 +248,7 @@ async def login(body: LoginRequest):
 def read_current_user(current_user: dict = Depends(get_current_user)):
     return {"user": serialize_user(current_user)}
 
-
+# FORGOT PASSWORD
 @router.post("/forgot-password")
 def forgot_password(body: ForgotPasswordRequest):
     email = body.email.strip().lower()
@@ -273,7 +274,7 @@ def forgot_password(body: ForgotPasswordRequest):
 
     return {"message": "If this email exists, an OTP has been sent."}
 
-
+# VERIFY OTP
 @router.post("/verify-otp")
 def verify_otp(body: VerifyOTPRequest):
     email = body.email.strip().lower()
@@ -289,7 +290,7 @@ def verify_otp(body: VerifyOTPRequest):
 
     return {"message": "OTP verified"}
 
-
+# RESET PASSWORD
 @router.post("/reset-password")
 def reset_password(body: ResetPasswordRequest):
     email = body.email.strip().lower()
@@ -324,3 +325,54 @@ def reset_password(body: ResetPasswordRequest):
 
     otp_store.pop(email, None)
     return {"message": "Password reset successfully"}
+
+# DELETE ACCOUNT
+@router.delete("/delete-account")
+def delete_account(current_user: dict = Depends(get_current_user)):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("DELETE FROM users WHERE id = %s", (current_user["id"],))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Account deleted successfully"}
+
+# CHANGE PASSWORD
+@router.post("/change-password")
+def change_password(
+    body: ChangePasswordRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("SELECT password FROM users WHERE id = %s", (current_user["id"],))
+        row = cur.fetchone()
+        if not row:
+            raise HTTPException(status_code=404, detail="User not found")
+
+        if not bcrypt.checkpw(body.current_password.encode(), dict(row)["password"].encode()):
+            raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+        if len(body.new_password) < 8:
+            raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+
+        hashed = bcrypt.hashpw(body.new_password.encode(), bcrypt.gensalt()).decode()
+        cur.execute("UPDATE users SET password = %s WHERE id = %s", (hashed, current_user["id"]))
+        conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Password updated successfully"}

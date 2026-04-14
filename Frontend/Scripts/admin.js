@@ -1,4 +1,4 @@
-//  Guard: must be logged in as admin 
+//  Guard: must be logged in as admin
 const userData   = sessionStorage.getItem('ls_user');
 const _user      = userData ? JSON.parse(userData) : null;
 if (!_user || _user.role !== 'admin') {
@@ -6,19 +6,29 @@ if (!_user || _user.role !== 'admin') {
 }
 const adminToken = _user.token;
 
-// Admin info in sidebar 
+// Admin info in sidebar
 const adminName = _user.username || 'Admin';
 document.getElementById('adminName').textContent   = adminName;
 document.getElementById('adminAvatar').textContent = adminName.slice(0, 2).toUpperCase();
 
 lucide.createIcons();
 
-//  Data stores 
+//  Data stores
 let allUsers      = [];
 let allDetections = [];
 let allFeedback   = [];
 
-//  Helpers 
+// Cached filtered lists (used by pagination)
+let _filteredUsers      = [];
+let _filteredDetections = [];
+
+// Pagination config
+const USERS_PER_PAGE      = 10;
+const DETECTIONS_PER_PAGE = 15;
+let   userCurrentPage     = 1;
+let   detectCurrentPage   = 1;
+
+//  Helpers
 const CAT_LABELS = {
   accuracy: 'Disease Accuracy', speed: 'Speed',
   language: 'Language Support', ui: 'App Design',
@@ -59,23 +69,23 @@ function isToday(iso) {
   return new Date(iso).toDateString() === new Date().toDateString();
 }
 
-//  Auth header 
+//  Auth header
 function authHeaders() {
   return { 'Authorization': `Bearer ${adminToken}`, 'Content-Type': 'application/json' };
 }
 
-//  Logout 
+//  Logout
 function adminLogout() {
   sessionStorage.removeItem('ls_user');
   window.location.href = 'login.html';
 }
 
-// Sidebar toggle (mobile) 
+// Sidebar toggle (mobile)
 function toggleSidebar() {
   document.getElementById('sidebar').classList.toggle('open');
 }
 
-//  Tab switching 
+//  Tab switching
 const TAB_TITLES = {
   overview:   'Overview',
   users:      'Users',
@@ -92,14 +102,13 @@ function switchTab(name) {
   document.getElementById('sidebar').classList.remove('open');
 }
 
-
 //  LOAD ALL DATA
 async function refreshAll() {
   await Promise.all([loadUsers(), loadDetections(), loadFeedback()]);
   renderOverview();
 }
 
-//  Users 
+//  Users
 async function loadUsers() {
   try {
     const res  = await fetch('/admin/users', { headers: authHeaders() });
@@ -112,7 +121,7 @@ async function loadUsers() {
   }
 }
 
-//  Detections 
+//  Detections
 async function loadDetections() {
   try {
     const res     = await fetch('/admin/detections', { headers: authHeaders() });
@@ -125,7 +134,7 @@ async function loadDetections() {
   }
 }
 
-// Feedback 
+//  Feedback
 async function loadFeedback() {
   try {
     const res   = await fetch('/admin/feedback', { headers: authHeaders() });
@@ -139,12 +148,16 @@ async function loadFeedback() {
   }
 }
 
-
 //  OVERVIEW
 function renderOverview() {
+  // seed cached arrays so pagination works on first switch
+  _filteredUsers      = allUsers;
+  _filteredDetections = allDetections;
+
   renderUsers(allUsers);
   renderDetections(allDetections);
   renderFeedbackList(allFeedback);
+
   // Users
   document.getElementById('ovUsers').textContent = allUsers.length;
   const newUsers = allUsers.filter(u => isThisWeek(u.created_at)).length;
@@ -220,18 +233,122 @@ function renderOverview() {
   lucide.createIcons();
 }
 
+//  PAGINATION RENDERER
+function renderPagination(containerId, currentPage, totalPages, onPageFn) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  if (totalPages <= 1) { wrap.innerHTML = ''; return; }
+
+  const base = `
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:32px;height:32px;padding:0 8px;
+    border:1.5px solid var(--border);border-radius:10px;
+    background:var(--white);font-family:'Nunito',sans-serif;
+    font-size:12px;font-weight:700;color:var(--text-mid);cursor:pointer;
+    transition:background .2s,color .2s,border-color .2s;`;
+
+  const active = `
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:32px;height:32px;padding:0 8px;
+    border:1.5px solid var(--leaf);border-radius:10px;
+    background:var(--leaf);font-family:'Nunito',sans-serif;
+    font-size:12px;font-weight:700;color:#fff;cursor:default;`;
+
+  const disabled = `
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:32px;height:32px;padding:0 8px;
+    border:1.5px solid var(--border);border-radius:10px;
+    background:var(--white);font-family:'Nunito',sans-serif;
+    font-size:12px;font-weight:700;color:var(--text-soft);
+    cursor:not-allowed;opacity:.4;`;
+
+  const hover = `onmouseenter="this.style.background='var(--leaf-pale)';this.style.color='var(--leaf)';this.style.borderColor='var(--leaf)'"
+    onmouseleave="this.style.background='var(--white)';this.style.color='var(--text-mid)';this.style.borderColor='var(--border)'"`;
+
+  function btn(label, page, isCurrent = false, isDisabled = false) {
+    if (isDisabled) return `<button style="${disabled}" disabled>${label}</button>`;
+    if (isCurrent)  return `<button style="${active}">${label}</button>`;
+    return `<button style="${base}" ${hover} onclick="${onPageFn}(${page})">${label}</button>`;
+  }
+
+  const start = Math.max(1, currentPage - 2);
+  const end   = Math.min(totalPages, currentPage + 2);
+  let html = '';
+
+  html += btn('‹', currentPage - 1, false, currentPage === 1);
+  if (start > 1) {
+    html += btn(1, 1);
+    if (start > 2) html += `<span style="font-size:12px;color:var(--text-soft);padding:0 2px;font-weight:700">…</span>`;
+  }
+  for (let i = start; i <= end; i++) {
+    html += btn(i, i, i === currentPage);
+  }
+  if (end < totalPages) {
+    if (end < totalPages - 1) html += `<span style="font-size:12px;color:var(--text-soft);padding:0 2px;font-weight:700">…</span>`;
+    html += btn(totalPages, totalPages);
+  }
+  html += btn('›', currentPage + 1, false, currentPage === totalPages);
+
+  wrap.innerHTML = html;
+}
+
 //  USERS TAB
+function filterUsers() {
+  const q    = document.getElementById('userSearch').value.toLowerCase();
+  const role = document.getElementById('userRoleFilter')
+    ? document.getElementById('userRoleFilter').value : '';
+  const sort = document.getElementById('userSortFilter')
+    ? document.getElementById('userSortFilter').value : 'newest';
+
+  let list = allUsers.filter(u => {
+    if (role === 'admin' && !u.is_admin) return false;
+    if (role === 'user'  &&  u.is_admin) return false;
+    return u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q);
+  });
+
+  if (sort === 'newest')          list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  else if (sort === 'oldest')     list.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  else if (sort === 'name')       list.sort((a, b) => a.username.localeCompare(b.username));
+  else if (sort === 'detections') {
+    list.sort((a, b) => {
+      const da = allDetections.filter(d => d.user_id === a.id).length;
+      const db = allDetections.filter(d => d.user_id === b.id).length;
+      return db - da;
+    });
+  }
+
+  _filteredUsers  = list;
+  userCurrentPage = 1;
+  renderUsers(list);
+}
+
+function goToUserPage(page) {
+  userCurrentPage = page;
+  renderUsers(_filteredUsers);
+}
+
 function renderUsers(users) {
+  const totalPages = Math.max(1, Math.ceil(users.length / USERS_PER_PAGE));
+  const page       = Math.min(userCurrentPage, totalPages);
+  userCurrentPage  = page;
+
+  const start = (page - 1) * USERS_PER_PAGE;
+  const items = users.slice(start, start + USERS_PER_PAGE);
+  const total = users.length;
+
+  const from = total === 0 ? 0 : start + 1;
+  const to   = Math.min(start + USERS_PER_PAGE, total);
   document.getElementById('userCount').textContent =
-    `Showing ${users.length} of ${allUsers.length} users`;
+    `Showing ${from}–${to} of ${total} users`;
 
   const tbody = document.getElementById('usersBody');
-  if (!users.length) {
+  if (!items.length) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-soft)">No users found</td></tr>`;
+    document.getElementById('userPagination').innerHTML = '';
     return;
   }
 
-  tbody.innerHTML = users.map(u => {
+  tbody.innerHTML = items.map(u => {
     const detectCount = allDetections.filter(d => d.user_id === u.id).length;
     return `
     <tr class="clickable" onclick="viewUser(${u.id})">
@@ -244,11 +361,9 @@ function renderUsers(users) {
       <td style="color:var(--text-soft)">${escHtml(u.email)}</td>
       <td style="color:var(--text-soft)">${fmtDate(u.created_at)}</td>
       <td><span class="ad-badge ad-badge--blue">${detectCount} scan${detectCount !== 1 ? 's' : ''}</span></td>
-      <td>
-        ${u.is_admin
-          ? '<span class="ad-badge ad-badge--amber">Admin</span>'
-          : '<span class="ad-badge ad-badge--gray">User</span>'}
-      </td>
+      <td>${u.is_admin
+        ? '<span class="ad-badge ad-badge--amber">Admin</span>'
+        : '<span class="ad-badge ad-badge--gray">User</span>'}</td>
       <td style="display:flex;gap:8px;align-items:center">
         <button class="ad-view-btn" onclick="event.stopPropagation();viewUser(${u.id})">
           <i data-lucide="eye" style="width:12px;height:12px"></i>
@@ -266,10 +381,11 @@ function renderUsers(users) {
   }).join('');
 
   lucide.createIcons();
+  renderPagination('userPagination', page, totalPages, 'goToUserPage');
 }
 
 async function toggleAdmin(userId, isCurrentlyAdmin) {
-  const action = isCurrentlyAdmin ? 'demote' : 'promote';
+  const action    = isCurrentlyAdmin ? 'demote' : 'promote';
   const confirmed = confirm(`Are you sure you want to ${action} this user?`);
   if (!confirmed) return;
 
@@ -279,32 +395,32 @@ async function toggleAdmin(userId, isCurrentlyAdmin) {
       headers: authHeaders(),
       body: JSON.stringify({ is_admin: !isCurrentlyAdmin })
     });
-
     if (res.status === 401) { adminLogout(); return; }
-
     if (res.ok) {
       await loadUsers();
+      _filteredUsers = allUsers;
       renderUsers(allUsers);
     } else {
       const err = await res.json();
       alert(err.message || 'Failed to update user role.');
     }
-  } catch (e) {
+  } catch {
     alert('Network error. Please try again.');
   }
 }
 
-function filterUsers() {
-  const q = document.getElementById('userSearch').value.toLowerCase();
-  const filtered = allUsers.filter(u =>
-    u.username.toLowerCase().includes(q) ||
-    u.email.toLowerCase().includes(q)
-  );
-  renderUsers(filtered);
+function toggleUserClear() {
+  const val = document.getElementById('userSearch').value;
+  document.getElementById('userClearBtn').style.display = val.length > 0 ? 'flex' : 'none';
+}
+function clearUserSearch() {
+  document.getElementById('userSearch').value = '';
+  document.getElementById('userClearBtn').style.display = 'none';
+  filterUsers();
 }
 
 function viewUser(userId) {
-  const user    = allUsers.find(u => u.id === userId);
+  const user = allUsers.find(u => u.id === userId);
   if (!user) return;
 
   const detects = allDetections.filter(d => d.user_id === userId);
@@ -349,21 +465,61 @@ function closeUserDetail() {
   document.getElementById('usersMain').style.display  = 'block';
 }
 
-
 //  DETECTIONS TAB
+function filterDetections() {
+  const q     = document.getElementById('detectSearch').value.toLowerCase();
+  const stage = document.getElementById('detectStage').value;
+  const sort  = document.getElementById('detectSort')
+    ? document.getElementById('detectSort').value : 'newest';
+
+  let list = allDetections.filter(d => {
+    if (stage && d.stage !== stage) return false;
+    if (q && !(
+      d.predicted_class.toLowerCase().includes(q) ||
+      (d.username || '').toLowerCase().includes(q)
+    )) return false;
+    return true;
+  });
+
+  if (sort === 'newest')          list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  else if (sort === 'oldest')     list.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  else if (sort === 'confidence') list.sort((a, b) => b.confidence   - a.confidence);
+  else if (sort === 'severity')   list.sort((a, b) => b.severity_pct - a.severity_pct);
+
+  _filteredDetections = list;
+  detectCurrentPage   = 1;
+  renderDetections(list);
+}
+
+function goToDetectPage(page) {
+  detectCurrentPage = page;
+  renderDetections(_filteredDetections);
+}
+
 function renderDetections(detections) {
+  const totalPages  = Math.max(1, Math.ceil(detections.length / DETECTIONS_PER_PAGE));
+  const page        = Math.min(detectCurrentPage, totalPages);
+  detectCurrentPage = page;
+
+  const start = (page - 1) * DETECTIONS_PER_PAGE;
+  const items = detections.slice(start, start + DETECTIONS_PER_PAGE);
+  const total = detections.length;
+
+  const from = total === 0 ? 0 : start + 1;
+  const to   = Math.min(start + DETECTIONS_PER_PAGE, total);
   document.getElementById('detectCount').textContent =
-    `Showing ${detections.length} of ${allDetections.length} detections`;
+    `Showing ${from}–${to} of ${total} detections`;
 
   const tbody = document.getElementById('detectionsBody');
-  if (!detections.length) {
+  if (!items.length) {
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-soft)">No detections found</td></tr>`;
+    document.getElementById('detectPagination').innerHTML = '';
     return;
   }
 
-  tbody.innerHTML = detections.map((d, i) => `
+  tbody.innerHTML = items.map((d, i) => `
     <tr>
-      <td style="color:var(--text-soft)">${i + 1}</td>
+      <td style="color:var(--text-soft)">${start + i + 1}</td>
       <td>
         <div class="ad-cell-user">
           <div class="ad-cell-avatar" style="background:var(--blue-pale);color:var(--blue)">
@@ -380,20 +536,17 @@ function renderDetections(detections) {
     </tr>`).join('');
 
   lucide.createIcons();
+  renderPagination('detectPagination', page, totalPages, 'goToDetectPage');
 }
 
-function filterDetections() {
-  const q     = document.getElementById('detectSearch').value.toLowerCase();
-  const stage = document.getElementById('detectStage').value;
-  const filtered = allDetections.filter(d => {
-    if (stage && d.stage !== stage) return false;
-    if (q && !(
-      d.predicted_class.toLowerCase().includes(q) ||
-      (d.username || '').toLowerCase().includes(q)
-    )) return false;
-    return true;
-  });
-  renderDetections(filtered);
+function toggleDetectClear() {
+  const val = document.getElementById('detectSearch').value;
+  document.getElementById('detectClearBtn').style.display = val.length > 0 ? 'flex' : 'none';
+}
+function clearDetectSearch() {
+  document.getElementById('detectSearch').value = '';
+  document.getElementById('detectClearBtn').style.display = 'none';
+  filterDetections();
 }
 
 
@@ -412,7 +565,7 @@ function computeFeedbackStats() {
   const avg = (allFeedback.reduce((s, f) => s + f.rating, 0) / total).toFixed(1);
   document.getElementById('statAvgRating').textContent = `${avg} / 5`;
 
-  const happy = allFeedback.filter(f => f.rating >= 4).length;
+  const happy        = allFeedback.filter(f => f.rating >= 4).length;
   const satisfaction = Math.round((happy / total) * 100);
   document.getElementById('statSatisfaction').textContent = `${satisfaction}%`;
 
@@ -444,33 +597,10 @@ function toggleFeedbackClear() {
   const val = document.getElementById('searchInput').value;
   document.getElementById('feedbackClearBtn').style.display = val.length > 0 ? 'flex' : 'none';
 }
-
 function clearFeedbackSearch() {
   document.getElementById('searchInput').value = '';
   document.getElementById('feedbackClearBtn').style.display = 'none';
   applyFilters();
-}
-
-function toggleUserClear() {
-  const val = document.getElementById('userSearch').value;
-  document.getElementById('userClearBtn').style.display = val.length > 0 ? 'flex' : 'none';
-}
-
-function clearUserSearch() {
-  document.getElementById('userSearch').value = '';
-  document.getElementById('userClearBtn').style.display = 'none';
-  filterUsers();
-}
-
-function toggleDetectClear() {
-  const val = document.getElementById('detectSearch').value;
-  document.getElementById('detectClearBtn').style.display = val.length > 0 ? 'flex' : 'none';
-}
-
-function clearDetectSearch() {
-  document.getElementById('detectSearch').value = '';
-  document.getElementById('detectClearBtn').style.display = 'none';
-  filterDetections();
 }
 
 function renderFeedbackList(items) {
@@ -524,5 +654,6 @@ function renderFeedbackList(items) {
   lucide.createIcons();
 }
 
-// Init 
+
+//  INIT
 refreshAll();

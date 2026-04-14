@@ -56,8 +56,28 @@ async function handleRegister(e) {
   if (name.length < 2) {
     document.getElementById("nameError").classList.add("show"); return;
   }
+  const gmailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/i;
+  if (!gmailRegex.test(email)) {
+    const emailErr = document.getElementById("emailError");
+    emailErr.textContent = "Only Gmail addresses (@gmail.com) are accepted.";
+    emailErr.classList.add("show"); return;
+  }
+  const pwErr = document.getElementById("pwError");
   if (password.length < 8) {
-    document.getElementById("pwError").classList.add("show"); return;
+    pwErr.textContent = "Password must be at least 8 characters.";
+    pwErr.classList.add("show"); return;
+  }
+  if (!/[A-Z]/.test(password)) {
+    pwErr.textContent = "Password must contain at least one uppercase letter.";
+    pwErr.classList.add("show"); return;
+  }
+  if (!/[0-9]/.test(password)) {
+    pwErr.textContent = "Password must contain at least one number.";
+    pwErr.classList.add("show"); return;
+  }
+  if (!/[^a-zA-Z0-9]/.test(password)) {
+    pwErr.textContent = "Password must contain at least one special character (!@#$...).";
+    pwErr.classList.add("show"); return;
   }
   if (password !== confirm) {
     document.getElementById("confirmError").classList.add("show"); return;

@@ -238,12 +238,4 @@ CREATE TABLE feedback (
 - **Preprocessing:** MobileNetV2 `preprocess_input` normalisation (scales to [-1, 1])
 - **Augmentation:** Rotation, flips, brightness, zoom, shear, random crop
 
----
-
-## License
-
-This project is licensed under the MIT License.
-
----
-
 *Built with TensorFlow · FastAPI · Groq · PostgreSQL · OpenCV*

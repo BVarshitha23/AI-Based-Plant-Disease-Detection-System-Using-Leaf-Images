@@ -24,8 +24,8 @@ from Schemas import (
     LoginRequest,
     ResetPasswordRequest,
     SignupRequest,
-    VerifyOTPRequest,
     ChangePasswordRequest,
+    VerifyOTPRequest,
 )
 
 #  BEARER SCHEME 
@@ -126,7 +126,7 @@ def get_current_user(
 
     return dict(user)
 
-# ADMIN VERIFICATION
+
 def verify_admin(
     credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
 ) -> dict:
@@ -166,9 +166,7 @@ def signup(body: SignupRequest):
 
     if len(username) < 2:
         raise HTTPException(status_code=400, detail="Username must be at least 2 characters")
-    if len(body.password) < 8:
-        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-
+    # Password strength is validated by SignupRequest schema (Schemas.py)
     conn = get_db()
     cur  = conn.cursor()
     try:
@@ -197,7 +195,7 @@ def signup(body: SignupRequest):
 
     return {"message": "Account created successfully"}
 
-# LOGIN
+
 @router.post("/login")
 async def login(body: LoginRequest):
     identifier = (body.email or body.username or "").strip().lower()
@@ -248,7 +246,7 @@ async def login(body: LoginRequest):
 def read_current_user(current_user: dict = Depends(get_current_user)):
     return {"user": serialize_user(current_user)}
 
-# FORGOT PASSWORD
+
 @router.post("/forgot-password")
 def forgot_password(body: ForgotPasswordRequest):
     email = body.email.strip().lower()
@@ -274,7 +272,7 @@ def forgot_password(body: ForgotPasswordRequest):
 
     return {"message": "If this email exists, an OTP has been sent."}
 
-# VERIFY OTP
+
 @router.post("/verify-otp")
 def verify_otp(body: VerifyOTPRequest):
     email = body.email.strip().lower()
@@ -290,7 +288,7 @@ def verify_otp(body: VerifyOTPRequest):
 
     return {"message": "OTP verified"}
 
-# RESET PASSWORD
+
 @router.post("/reset-password")
 def reset_password(body: ResetPasswordRequest):
     email = body.email.strip().lower()

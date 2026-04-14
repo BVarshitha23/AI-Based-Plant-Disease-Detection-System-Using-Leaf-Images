@@ -146,16 +146,32 @@
         </div>
 
         <div id="usersMain">
-          <div class="ad-filters">
-           <div class="ad-search-wrap">
+          <div class="ad-filters" style="flex-wrap:nowrap;gap:8px;">
+            <div class="ad-search-wrap">
               <i data-lucide="search" style="width:15px;height:15px" class="ad-search-icon"></i>
-              <input class="ad-search" type="text" id="userSearch" placeholder="Search by name or email…" oninput="filterUsers(); toggleUserClear()" />
-              <button class="ad-search-clear" id="userClearBtn" onclick="clearUserSearch()" style="display:none">
+              <input class="ad-search" type="text" id="userSearch"
+                placeholder="Search by email…"
+                oninput="filterUsers(); toggleUserClear()" />
+              <button class="ad-search-clear" id="userClearBtn"
+                onclick="clearUserSearch()" style="display:none">
                 <i data-lucide="x" style="width:13px;height:13px"></i>
               </button>
             </div>
+            <select class="ad-select" id="userRoleFilter" onchange="filterUsers()">
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="user">User</option>
+            </select>
+            <select class="ad-select" id="userSortFilter" onchange="filterUsers()">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name">Name A–Z</option>
+              <option value="detections">Most Scans</option>
+            </select>
           </div>
+
           <div class="ad-results-bar"><span id="userCount">Loading…</span></div>
+
           <div class="ad-table-wrap">
             <table class="ad-table">
               <thead>
@@ -172,9 +188,10 @@
               <tbody id="usersBody"></tbody>
             </table>
           </div>
+
+          <div id="userPagination" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:16px;flex-wrap:wrap"></div>
         </div>
 
-        <!-- User detail -->
         <div id="userDetail" style="display:none">
           <button class="ad-back-btn" onclick="closeUserDetail()">
             <i data-lucide="arrow-left" style="width:15px;height:15px"></i>
@@ -207,12 +224,15 @@
           <p class="ad-section-sub">Every scan made across all users</p>
         </div>
 
-        <div class="ad-filters">
+        <div class="ad-filters" style="flex-wrap:nowrap;gap:8px;">
           <div class="ad-search-wrap">
             <i data-lucide="search" style="width:15px;height:15px" class="ad-search-icon"></i>
-            <input class="ad-search" type="text" id="detectSearch" placeholder="Search disease or username…" oninput="filterDetections(); toggleDetectClear()" />
-            <button class="ad-search-clear" id="detectClearBtn" onclick="clearDetectSearch()" style="display:none">
-             <i data-lucide="x" style="width:13px;height:13px"></i>
+            <input class="ad-search" type="text" id="detectSearch"
+              placeholder="Search disease"
+              oninput="filterDetections(); toggleDetectClear()" />
+            <button class="ad-search-clear" id="detectClearBtn"
+              onclick="clearDetectSearch()" style="display:none">
+              <i data-lucide="x" style="width:13px;height:13px"></i>
             </button>
           </div>
           <select class="ad-select" id="detectStage" onchange="filterDetections()">
@@ -223,8 +243,16 @@
             <option value="Severe">Severe</option>
             <option value="Critical">Critical</option>
           </select>
+          <select class="ad-select" id="detectSort" onchange="filterDetections()">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="confidence">High Confidence</option>
+            <option value="severity">High Severity</option>
+          </select>
         </div>
+
         <div class="ad-results-bar"><span id="detectCount">Loading…</span></div>
+
         <div class="ad-table-wrap">
           <table class="ad-table">
             <thead>
@@ -241,6 +269,8 @@
             <tbody id="detectionsBody"></tbody>
           </table>
         </div>
+
+        <div id="detectPagination" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:16px;flex-wrap:wrap"></div>
       </section>
 
       <!-- ════ FEEDBACK ════ -->

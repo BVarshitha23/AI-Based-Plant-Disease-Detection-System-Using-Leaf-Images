@@ -152,18 +152,39 @@
             </div>
           </div>
 
+          
           <!-- Danger Zone -->
           <div class="profile-card profile-card--danger">
             <div class="profile-card-title danger-title">Danger Zone</div>
-            <p class="profile-copy">
-              Permanently delete your account and all associated data.
-              This action cannot be revoked.
-            </p>
-            <button class="danger-btn" type="button" onclick="showDeleteConfirm()">
-              <i data-lucide="trash-2" style="width:17px;height:17px"></i>
-              Delete My Account
-            </button>
+              <p class="profile-copy">
+               Permanently delete your account and all associated data.
+               This action cannot be revoked.
+              </p>
+
+          <div class="danger-list">
+          <div class="danger-list-item">
+          <i data-lucide="scan-line" style="width:15px;height:15px"></i>
+            All detection history will be erased
           </div>
+          <div class="danger-list-item">
+          <i data-lucide="message-square-heart" style="width:15px;height:15px"></i>
+            All feedback submissions removed
+          </div>
+          <div class="danger-list-item">
+          <i data-lucide="user-round-x" style="width:15px;height:15px"></i>
+            Your account cannot be recovered
+          </div>
+          <div class="danger-list-item">
+            <i data-lucide="image-off" style="width:15px;height:15px"></i>
+            Uploaded images permanently deleted
+          </div>
+        </div>
+
+        <button class="danger-btn" type="button" onclick="showDeleteConfirm()">
+          <i data-lucide="trash-2" style="width:17px;height:17px"></i>
+            Delete My Account
+        </button>
+      </div>
 
         </div><!-- /profile-grid -->
       </div><!-- /profile-shell -->

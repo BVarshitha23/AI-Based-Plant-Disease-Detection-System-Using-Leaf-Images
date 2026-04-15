@@ -170,13 +170,18 @@
 }
 
 /* Responsive */
-@media (max-width: 768px) {
-  .hero { padding: 52px 24px; }
-  .hero h1 { font-size: 32px; }
-  .hero p  { font-size: 14px; }
-  .steps-row { flex-direction: column; }
-  .step { border-right: none; border-bottom: 2px solid var(--border); }
+@media (max-width: 860px) {
+  .hero        { padding: 52px 24px; }
+  .hero h1     { font-size: 32px; }
+  .hero p      { font-size: 14px; }
+  .steps-row   { flex-direction: column; }
+  .step        { border-right: none; border-bottom: 2px solid var(--border); }
   .step:last-child { border-bottom: none; }
-  .step-arrow { display: none; }
-  .nav-links { display: none; }
+  .step-arrow  { display: none; }
+}
+
+@media (max-width: 480px) {
+  .hero        { padding: 40px 16px; }
+  .hero h1     { font-size: 26px; }
+  .how-section { padding: 40px 16px; }
 }

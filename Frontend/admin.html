@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard — LeafSense</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="stylesheet" href="CSS/admin.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap" rel="stylesheet"/>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  </head>
+  <body>
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="ad-sidebar" id="sidebar">
+      <div class="ad-sidebar-logo">
+        <div class="ad-logo-icon">
+          <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
+        </div>
+        <span class="ad-logo-text">LeafSense</span>
+      </div>
+
+      <div class="ad-sidebar-badge">
+        <i data-lucide="shield-check" style="width:12px;height:12px"></i>
+        Admin Panel
+      </div>
+
+      <nav class="ad-nav">
+        <button class="ad-nav-item active" onclick="switchTab('overview')" id="nav-overview">
+          <i data-lucide="layout-dashboard" style="width:17px;height:17px"></i>
+          <span>Overview</span>
+        </button>
+        <button class="ad-nav-item" onclick="switchTab('users')" id="nav-users">
+          <i data-lucide="users" style="width:17px;height:17px"></i>
+          <span>Users</span>
+          <span class="ad-nav-badge" id="navBadgeUsers">—</span>
+        </button>
+        <button class="ad-nav-item" onclick="switchTab('detections')" id="nav-detections">
+          <i data-lucide="scan-line" style="width:17px;height:17px"></i>
+          <span>Detections</span>
+          <span class="ad-nav-badge" id="navBadgeDetections">—</span>
+        </button>
+        <button class="ad-nav-item" onclick="switchTab('feedback')" id="nav-feedback">
+          <i data-lucide="message-square-heart" style="width:17px;height:17px"></i>
+          <span>Feedback</span>
+          <span class="ad-nav-badge" id="navBadgeFeedback">—</span>
+        </button>
+      </nav>
+
+      <div class="ad-sidebar-footer">
+        <div class="ad-admin-info">
+          <div class="ad-admin-avatar" id="adminAvatar">A</div>
+          <div>
+            <div class="ad-admin-name" id="adminName">Admin</div>
+            <div class="ad-admin-role">Administrator</div>
+          </div>
+        </div>
+        <button class="ad-sidebar-logout" onclick="adminLogout()" title="Logout">
+          <i data-lucide="log-out" style="width:16px;height:16px"></i>
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="ad-content">
+
+      <!-- Topbar -->
+      <header class="ad-topbar">
+        <button class="ad-menu-btn" onclick="toggleSidebar()">
+          <i data-lucide="menu" style="width:20px;height:20px"></i>
+        </button>
+        <div class="ad-topbar-title" id="topbarTitle">Overview</div>
+        <button class="ad-refresh-btn" onclick="refreshAll()">
+          <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
+          <span class="ad-btn-label">Refresh</span>
+        </button>
+        <a href="/index" class="ad-refresh-btn" style="text-decoration:none;">
+          <i data-lucide="arrow-left" style="width:14px;height:14px"></i>
+          <span class="ad-btn-label">Back to App</span>
+        </a>
+      </header>
+
+      <!-- OVERVIEW -->
+      <section class="ad-tab active" id="tab-overview">
+        <div class="ad-section-head">
+          <h1 class="ad-section-title">Dashboard Overview</h1>
+          <p class="ad-section-sub">Real-time summary of LeafSense activity</p>
+        </div>
+
+        <div class="ad-overview-grid">
+          <div class="ad-ov-card ad-ov-card--green">
+            <div class="ad-ov-icon"><i data-lucide="users" style="width:26px;height:26px"></i></div>
+            <div class="ad-ov-value" id="ovUsers">—</div>
+            <div class="ad-ov-label">Total Users</div>
+            <div class="ad-ov-sub" id="ovUsersNew">— joined this week</div>
+          </div>
+          <div class="ad-ov-card ad-ov-card--blue">
+            <div class="ad-ov-icon"><i data-lucide="scan-line" style="width:26px;height:26px"></i></div>
+            <div class="ad-ov-value" id="ovDetections">—</div>
+            <div class="ad-ov-label">Total Detections</div>
+            <div class="ad-ov-sub" id="ovDetectionsToday">— today</div>
+          </div>
+          <div class="ad-ov-card ad-ov-card--amber">
+            <div class="ad-ov-icon"><i data-lucide="message-square-heart" style="width:26px;height:26px"></i></div>
+            <div class="ad-ov-value" id="ovFeedback">—</div>
+            <div class="ad-ov-label">Total Feedback</div>
+            <div class="ad-ov-sub" id="ovAvgRating">avg rating —</div>
+          </div>
+          <div class="ad-ov-card ad-ov-card--purple">
+            <div class="ad-ov-icon"><i data-lucide="activity" style="width:26px;height:26px"></i></div>
+            <div class="ad-ov-value" id="ovAccuracy">—</div>
+            <div class="ad-ov-label">Avg Confidence</div>
+            <div class="ad-ov-sub" id="ovTopDisease">top: —</div>
+          </div>
+        </div>
+
+        <div class="ad-ov-bottom">
+          <div class="ad-ov-panel">
+            <div class="ad-panel-head">
+              <span class="ad-panel-title">
+                <i data-lucide="users" style="width:15px;height:15px"></i>
+                Recent Users
+              </span>
+              <button class="ad-panel-link" onclick="switchTab('users')">View all →</button>
+            </div>
+            <div id="ovRecentUsers" class="ad-mini-list"></div>
+          </div>
+          <div class="ad-ov-panel">
+            <div class="ad-panel-head">
+              <span class="ad-panel-title">
+                <i data-lucide="scan-line" style="width:15px;height:15px"></i>
+                Recent Detections
+              </span>
+              <button class="ad-panel-link" onclick="switchTab('detections')">View all →</button>
+            </div>
+            <div id="ovRecentDetections" class="ad-mini-list"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- USERS  -->
+      <section class="ad-tab" id="tab-users">
+        <div class="ad-section-head">
+          <h1 class="ad-section-title">Users</h1>
+          <p class="ad-section-sub">All registered users — click a row to view their detections</p>
+        </div>
+
+        <div id="usersMain">
+          <div class="ad-filters" style="flex-wrap:nowrap;gap:8px;">
+            <div class="ad-search-wrap">
+              <i data-lucide="search" style="width:15px;height:15px" class="ad-search-icon"></i>
+              <input class="ad-search" type="text" id="userSearch"
+                placeholder="Search by email…"
+                oninput="filterUsers(); toggleUserClear()" />
+              <button class="ad-search-clear" id="userClearBtn"
+                onclick="clearUserSearch()" style="display:none">
+                <i data-lucide="x" style="width:13px;height:13px"></i>
+              </button>
+            </div>
+            <select class="ad-select" id="userRoleFilter" onchange="filterUsers()">
+              <option value="">All Roles</option>
+              <option value="admin">Admin</option>
+              <option value="user">User</option>
+            </select>
+            <select class="ad-select" id="userSortFilter" onchange="filterUsers()">
+              <option value="newest">Newest First</option>
+              <option value="oldest">Oldest First</option>
+              <option value="name">Name A–Z</option>
+              <option value="detections">Most Scans</option>
+            </select>
+          </div>
+
+          <div class="ad-results-bar"><span id="userCount">Loading…</span></div>
+
+          <div class="ad-table-wrap">
+            <table class="ad-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Email</th>
+                  <th>Joined</th>
+                  <th>Detections</th>
+                  <th>Role</th>
+                  <th>View Prediction</th>
+                  <th>Role Actions</th>
+                  <th>Delete</th>
+                </tr>
+              </thead>
+              <tbody id="usersBody"></tbody>
+            </table>
+          </div>
+
+          <div id="userPagination" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:16px;flex-wrap:wrap"></div>
+        </div>
+
+        <div id="userDetail" style="display:none">
+          <button class="ad-back-btn" onclick="closeUserDetail()">
+            <i data-lucide="arrow-left" style="width:15px;height:15px"></i>
+            Back to Users
+          </button>
+          <div class="ad-user-detail-card" id="userDetailCard"></div>
+          <div class="ad-table-wrap" style="margin-top:20px">
+            <table class="ad-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Disease</th>
+                  <th>Confidence</th>
+                  <th>Severity %</th>
+                  <th>Stage</th>
+                  <th>Urgency</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody id="userDetectBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════ DETECTIONS ════ -->
+      <section class="ad-tab" id="tab-detections">
+        <div class="ad-section-head">
+          <h1 class="ad-section-title">All Detections</h1>
+          <p class="ad-section-sub">Every scan made across all users</p>
+        </div>
+
+        <div class="ad-filters" style="flex-wrap:nowrap;gap:8px;">
+          <div class="ad-search-wrap">
+            <i data-lucide="search" style="width:15px;height:15px" class="ad-search-icon"></i>
+            <input class="ad-search" type="text" id="detectSearch"
+              placeholder="Search disease"
+              oninput="filterDetections(); toggleDetectClear()" />
+            <button class="ad-search-clear" id="detectClearBtn"
+              onclick="clearDetectSearch()" style="display:none">
+              <i data-lucide="x" style="width:13px;height:13px"></i>
+            </button>
+          </div>
+          <select class="ad-select" id="detectStage" onchange="filterDetections()">
+            <option value="">All Stages</option>
+            <option value="Healthy">Healthy</option>
+            <option value="Early">Early</option>
+            <option value="Moderate">Moderate</option>
+            <option value="Severe">Severe</option>
+            <option value="Critical">Critical</option>
+          </select>
+          <select class="ad-select" id="detectSort" onchange="filterDetections()">
+            <option value="newest">Newest First</option>
+            <option value="oldest">Oldest First</option>
+            <option value="confidence">High Confidence</option>
+            <option value="severity">High Severity</option>
+          </select>
+        </div>
+
+        <div class="ad-results-bar"><span id="detectCount">Loading…</span></div>
+
+        <div class="ad-table-wrap">
+          <table class="ad-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>User</th>
+                <th>Disease</th>
+                <th>Confidence</th>
+                <th>Severity %</th>
+                <th>Stage</th>
+                <th>Date</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <tbody id="detectionsBody"></tbody>
+          </table>
+        </div>
+
+        <div id="detectPagination" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:16px;flex-wrap:wrap"></div>
+      </section>
+
+<!-- ════ FEEDBACK ════ -->
+<section class="ad-tab" id="tab-feedback">
+  <div class="ad-section-head">
+    <h1 class="ad-section-title">Feedback Inbox</h1>
+    <p class="ad-section-sub">All user submissions — newest first</p>
+  </div>
+ 
+  <div class="ad-stats">
+    <div class="ad-stat-card">
+      <div class="ad-stat-icon ad-stat-icon--blue">
+        <i data-lucide="message-square" style="width:18px;height:18px"></i>
+      </div>
+      <div>
+        <div class="ad-stat-value" id="statTotal">—</div>
+        <div class="ad-stat-label">Total Responses</div>
+      </div>
+    </div>
+    <div class="ad-stat-card">
+      <div class="ad-stat-icon ad-stat-icon--green">
+        <i data-lucide="star" style="width:18px;height:18px"></i>
+      </div>
+      <div>
+        <div class="ad-stat-value" id="statAvgRating">—</div>
+        <div class="ad-stat-label">Avg Rating</div>
+      </div>
+    </div>
+    <div class="ad-stat-card">
+      <div class="ad-stat-icon ad-stat-icon--amber">
+        <i data-lucide="sprout" style="width:18px;height:18px"></i>
+      </div>
+      <div>
+        <div class="ad-stat-value" id="statSatisfaction">—</div>
+        <div class="ad-stat-label">Satisfaction Score</div>
+      </div>
+    </div>
+    <div class="ad-stat-card">
+      <div class="ad-stat-icon ad-stat-icon--purple">
+        <i data-lucide="trending-up" style="width:18px;height:18px"></i>
+      </div>
+      <div>
+        <div class="ad-stat-value" id="statTopCat">—</div>
+        <div class="ad-stat-label">Top Category</div>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="fb-chart-row">
+    <div class="fb-chart-card">
+      <div class="fb-chart-title">
+        <i data-lucide="bar-chart-2" style="width:15px;height:15px;color:var(--leaf)"></i>
+        Rating Distribution
+      </div>
+      <p class="fb-chart-sub">How users rated the app (1 – 5 stars)</p>
+      <canvas id="fbRatingChart"></canvas>
+    </div>
+    <div class="fb-chart-card">
+      <div class="fb-chart-title">
+        <i data-lucide="pie-chart" style="width:15px;height:15px;color:var(--leaf)"></i>
+        Feedback by Category
+      </div>
+      <p class="fb-chart-sub">What users care most about</p>
+      <canvas id="fbCatChart"></canvas>
+    </div>
+  </div>
+
+  <div class="ad-filters">
+    <div class="ad-search-wrap">
+      <i data-lucide="search" style="width:15px;height:15px" class="ad-search-icon"></i>
+      <input class="ad-search" type="text" id="searchInput" placeholder="Search feedback…" oninput="applyFilters(); toggleFeedbackClear()" />
+      <button class="ad-search-clear" id="feedbackClearBtn" onclick="clearFeedbackSearch()" style="display:none">
+        <i data-lucide="x" style="width:13px;height:13px"></i>
+      </button>
+    </div>
+    <select class="ad-select" id="filterRating" onchange="applyFilters()">
+      <option value="">All Ratings</option>
+      <option value="5">Excellent (5 ★)</option>
+      <option value="4">Good (4 ★)</option>
+      <option value="3">Okay (3 ★)</option>
+      <option value="2">Bad (2 ★)</option>
+      <option value="1">Terrible (1 ★)</option>
+    </select>
+    <select class="ad-select" id="filterCategory" onchange="applyFilters()">
+      <option value="">All Categories</option>
+      <option value="accuracy">Disease Accuracy</option>
+      <option value="speed">Speed</option>
+      <option value="language">Language Support</option>
+      <option value="ui">App Design</option>
+      <option value="treatment">Treatment Advice</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+ 
+  <div class="ad-results-bar"><span id="resultsCount">Loading…</span></div>
+  <div id="feedbackList" class="ad-list"></div>
+  <div class="ad-empty" id="emptyState" style="display:none">
+    <i data-lucide="inbox" style="width:48px;height:48px;color:#c8e6c9"></i>
+    <h3>No feedback found</h3>
+    <p>Try adjusting your filters or check back later.</p>
+  </div>
+</section>
+
+    </div>
+
+    <script src="Scripts/auth.js"></script>
+    <script src="Scripts/admin.js"></script>
+  </body>
+</html>

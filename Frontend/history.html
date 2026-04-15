@@ -15,22 +15,45 @@
   </head>
   <body>
 
-    <!-- NAVBAR -->
-    <nav class="navbar">
-      <a href="index.html" class="logo">
-        <div class="logo-icon">
-          <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
-        </div>
-        <span class="logo-text">LeafSense</span>
-      </a>
-      <div class="nav-links">
-        <a href="index.html">Home</a>
-        <a href="detect.html">Detect</a>
-        <a href="history.html" style="color:var(--leaf)">History</a>
-        <a href="profile.html">Profile</a>
-        <div class="nav-auth" id="navAuth"></div>
-      </div>
-    </nav>
+  <!-- NAVBAR -->
+  <nav class="navbar">
+    <a href="index.html" class="logo">
+    <div class="logo-icon">
+      <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
+    </div>
+    <span class="logo-text">LeafSense</span>
+    </a>
+
+    <!-- Desktop nav links -->
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="detect.html">Detect</a>
+      <a href="history.html">History</a>
+      <a href="feedback.html">Feedback</a>
+      <!-- <a href="profile.html">Profile</a> -->
+    </div>
+
+    <!-- Desktop right: profile / login -->
+    <div class="nav-right" id="navRight"></div>
+
+    <!-- Hamburger (mobile) -->
+    <button class="hamburger" id="hamburger" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+
+    <!-- Mobile drawer -->
+    <div class="mobile-nav" id="mobileNav">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="detect.html">Detect</a>
+      <a href="history.html">History</a>
+      <a href="profile.html">Profile</a>
+      <a href="feedback.html">Feedback</a>
+      <div id="mobileNavAuth"></div>
+    </div>
+  </nav>
+  
 
     <!-- MAIN PAGE -->
     <div class="history-page">
@@ -46,10 +69,23 @@
             <i data-lucide="scan-line" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>
             New Scan
           </button>
-          <button class="btn-primary" id="exportBtn" onclick="exportCSV()">
-            <i data-lucide="download" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>
-            Export CSV
-          </button>
+          <div class="export-dropdown" id="exportDropdown">
+  <button class="btn-primary" onclick="toggleExportMenu()">
+    <i data-lucide="download" style="width:14px;height:14px;vertical-align:-2px;margin-right:4px;"></i>
+    Export CSV
+    <i data-lucide="chevron-down" style="width:13px;height:13px;vertical-align:-2px;margin-left:4px;"></i>
+  </button>
+  <div class="export-menu" id="exportMenu">
+    <button onclick="exportCSV('all')">
+      <i data-lucide="database" style="width:14px;height:14px;"></i>
+      Download All Records
+    </button>
+    <button onclick="exportCSV('filtered')">
+      <i data-lucide="filter" style="width:14px;height:14px;"></i>
+      Download Current Filters
+    </button>
+        </div>
+        </div>
         </div>
       </div>
 
@@ -86,10 +122,13 @@
       </div>
 
       <!-- Filters -->
-      <div class="filters-bar">
+       <div class="filters-bar">
         <div class="search-wrap">
           <i data-lucide="search" style="width:15px;height:15px;" class="search-icon"></i>
-          <input type="text" id="searchInput" placeholder="Search by disease name…" oninput="applyFilters()" />
+          <input type="text" id="searchInput" placeholder="Search by disease name…" oninput="handleSearch()" />
+          <button class="search-clear-btn" id="searchClearBtn" onclick="clearSearch()" style="display:none;" title="Clear search">
+            <i data-lucide="x" style="width:13px;height:13px;"></i>
+          </button>
         </div>
         <select class="filter-select" id="stageFilter" onchange="applyFilters()">
           <option value="">All Stages</option>
@@ -104,9 +143,13 @@
           <option value="oldest">Oldest First</option>
           <option value="conf_desc">Highest Confidence</option>
           <option value="sev_desc">Highest Severity</option>
+          <option value="sev_asc">Lowest Severity First</option>
+          <option value="conf_asc">Lowest Confidence First</option>
         </select>
         <span class="filter-count" id="filterCount"></span>
       </div>
+
+      
 
       <!-- Table -->
       <div class="table-wrap">
@@ -136,23 +179,29 @@
 
     </div>
 
-    <!-- Detail Modal -->
-    <div class="modal-overlay" id="detailModal" onclick="closeModal(event)">
-      <div class="modal-card">
-        <div class="modal-header">
-          <h3>Scan Details</h3>
-          <button class="modal-close" onclick="document.getElementById('detailModal').classList.remove('open')">
-            <i data-lucide="x" style="width:16px;height:16px;"></i>
-          </button>
+    <!-- FOOTER -->
+    <footer class="site-footer">
+      <div class="logo">
+        <div class="logo-icon">
+          <i
+            data-lucide="leaf"
+            style="width: 20px; height: 20px; color: #fff"
+          ></i>
         </div>
-        <div class="modal-body" id="modalBody"></div>
+        <span class="logo-text">LeafSense</span>
       </div>
-    </div>
+      <p>AI-Based Plant Disease Detection · Built for Farmers</p>
+    </footer>
 
     <script>lucide.createIcons();</script>
     <script src="Scripts/auth.js"></script>
     <script src="Scripts/history.js"></script>
+    <script src="Scripts/navbar.js"></script>
     <script>
+      lucide.createIcons();
+      initNavbar('history'); 
+    </script>
+    <!-- <script>
     if (Session.isLoggedIn()) {
         const navAuth = document.getElementById("navAuth");
         navAuth.innerHTML =
@@ -168,6 +217,6 @@
           window.location.href = "index.html";
         }, 700);
       }
-      </script>
+      </script> -->
   </body>
 </html>

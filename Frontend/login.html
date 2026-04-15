@@ -12,6 +12,7 @@
       rel="stylesheet"
     />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   </head>
   <body>
     <div class="auth-page">
@@ -60,12 +61,12 @@
 
       <!-- RIGHT PANEL — FORM -->
       <div class="auth-form-panel">
-        <a href="index.html" class="auth-back-link">
+        <!-- <a href="portal.html" class="auth-back-link">
           <i data-lucide="arrow-left" style="width:15px;height:15px;"></i>
-          Back to Home
-        </a>
+          Back to Portal
+        </a> -->
 
-        <h1 class="auth-heading">Welcome back</h1>
+        <h1 class="auth-heading">Hello there!</h1>
         <p class="auth-subheading">Sign in to access your scan history.</p>
 
         <!-- Error banner -->
@@ -114,22 +115,72 @@
             </div>
             <span class="field-error" id="pwError">Password is required.</span>
           </div>
-
+          <div class="recaptcha-wrap">
+            <div class="g-recaptcha" data-sitekey="6Le-yKwsAAAAAHnpKhKKB18rgmsqooakKHCJWsHA"></div>
+            <span class="field-error" id="captchaError" style="display:none;">
+            Please complete the CAPTCHA.
+            </span>
+          </div>
           <button type="submit" class="btn-auth" id="loginBtn">
             <i data-lucide="log-in" style="width:18px;height:18px"></i>
             Sign In
           </button>
+          <button type="reset" class="btn-reset" id="resetBtn">
+            <i data-lucide="rotate-ccw" style="width:17px;height:17px"></i>
+              Reset
+          </button>
         </form>
 
+        <div class="auth-footer" style="margin-top:12px;">
+          <a href="#" onclick="showForgotModal()">Forgot password?</a>
+        </div>
+
         <div class="auth-footer" style="margin-top:28px;">
-          Don't have an account? <a href="register.html">Create one free</a>
+          Don't have an account? <a href="register.html">Create new account</a>
         </div>
       </div>
 
     </div>
 
-    <script>lucide.createIcons();</script>
+
+    <!-- Forgot Password Modal -->
+<div id="forgotModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:16px;padding:32px;width:100%;max-width:400px;margin:16px;">
+    
+    <!-- Step 1: Email -->
+    <div id="fpStep1">
+      <h3 style="margin:0 0 8px;color:#166534;">Reset Password</h3>
+      <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Enter your email to receive an OTP.</p>
+      <input type="email" id="fpEmail" placeholder="you@example.com" style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;box-sizing:border-box;"/>
+      <div id="fpError1" style="color:#dc2626;font-size:13px;margin-top:8px;display:none;"></div>
+      <button onclick="sendOTP()" style="margin-top:16px;width:100%;padding:12px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Send OTP</button>
+      <button onclick="closeForgotModal()" style="margin-top:8px;width:100%;padding:10px;background:transparent;color:#6b7280;border:1px solid #e5e7eb;border-radius:8px;font-size:14px;cursor:pointer;">Cancel</button>
+    </div>
+
+    <!-- Step 2: OTP -->
+    <div id="fpStep2" style="display:none;">
+      <h3 style="margin:0 0 8px;color:#166534;">Enter OTP</h3>
+      <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Check your email for the 6-digit OTP.</p>
+      <input type="text" id="fpOTP" placeholder="000000" maxlength="6" style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:24px;letter-spacing:8px;text-align:center;box-sizing:border-box;"/>
+      <div id="fpError2" style="color:#dc2626;font-size:13px;margin-top:8px;display:none;"></div>
+      <button onclick="verifyOTP()" style="margin-top:16px;width:100%;padding:12px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Verify OTP</button>
+    </div>
+
+    <!-- Step 3: New Password -->
+    <div id="fpStep3" style="display:none;">
+      <h3 style="margin:0 0 8px;color:#166534;">New Password</h3>
+      <p style="color:#6b7280;font-size:14px;margin:0 0 20px;">Enter your new password.</p>
+      <input type="password" id="fpNewPw" placeholder="Min 8 characters" style="width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;box-sizing:border-box;"/>
+      <input type="password" id="fpConfirmPw" placeholder="Confirm password" style="margin-top:10px;width:100%;padding:10px 14px;border:1px solid #d1d5db;border-radius:8px;font-size:15px;box-sizing:border-box;"/>
+      <div id="fpError3" style="color:#dc2626;font-size:13px;margin-top:8px;display:none;"></div>
+      <button onclick="resetPassword()" style="margin-top:16px;width:100%;padding:12px;background:#166534;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;">Reset Password</button>
+    </div>
+
+  </div>
+</div>
+
     <script src="Scripts/auth.js"></script>
     <script src="Scripts/login.js"></script>
+    <script>lucide.createIcons();</script>
   </body>
 </html>

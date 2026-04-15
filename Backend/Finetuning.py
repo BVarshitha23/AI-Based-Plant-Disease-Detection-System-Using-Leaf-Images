@@ -262,7 +262,6 @@ train_val_gap   = best_train_acc - best_val_acc
 epochs_ran      = len(history.history["accuracy"])
 
 print(f"\n  FINAL RESULTS — Plant Disease {NUM_CLASSES} Classes")
-print(f"  ─────────────────────────────────────────────")
 print(f"  Best Train Accuracy   : {best_train_acc*100:.2f}%")
 print(f"  Best Val Accuracy     : {best_val_acc*100:.2f}%")
 print(f"  Best Val Top-3 Acc    : {best_val_top3*100:.2f}%")
@@ -270,6 +269,5 @@ print(f"  Best Val Loss         : {best_val_loss:.4f}")
 print(f"  Train/Val Gap         : {train_val_gap*100:.2f}%  "
       f"{'Good' if train_val_gap < 0.08 else 'Slight overfit — consider more dropout'}")
 print(f"  Total epochs ran      : {epochs_ran}/{EPOCHS}")
-print(f"  ─────────────────────────────────────────────")
 print(f"  Model saved → {MODEL_SAVE}")
 print(f"  Log saved   → {LOG_FILE}")

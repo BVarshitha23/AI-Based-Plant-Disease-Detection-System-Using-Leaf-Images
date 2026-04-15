@@ -1,157 +1,48 @@
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
-
-import bcrypt
-import cv2
 import io
 import json
-import jwt
-import numpy as np
 import os
-import psycopg2
+import re
 import threading
 import time
 import webbrowser
-from psycopg2.extras import RealDictCursor
+
+import cv2
+import numpy as np
 import uvicorn
 from fastapi import Depends, FastAPI, File, HTTPException, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
-from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi.staticfiles import StaticFiles
 from PIL import Image
-from pydantic import BaseModel
 from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
-from dotenv import load_dotenv
 
-load_dotenv()
-
-# CONFIG
-MODEL_PATH   = r"D:\Custom_dataset\Output\mobilenetv2_unfreeze50_best.keras"
-JSON_PATH    = r"D:\Custom_dataset\Output\class_labels.json"
-IMG_SIZE     = (224, 224)
-TTA_STEPS    = 5
-FRONTEND_DIR = r"D:\fastapi practice\Frontend"
-
-# JWT CONFIG
-SECRET_KEY          = os.getenv("SECRET_KEY")
-ALGORITHM           = "HS256"
-ACCESS_TOKEN_EXPIRE = timedelta(days=1)
-bearer_scheme       = HTTPBearer(auto_error=False)
-
-# DB CONFIG 
-DB_CONFIG = {
-    "host":     os.getenv("DB_HOST"),
-    "port":     int(os.getenv("DB_PORT", "5432")),
-    "dbname":   os.getenv("DB_NAME"),
-    "user":     os.getenv("DB_USER"),
-    "password": os.getenv("DB_PASSWORD"),
-}
+from auth import get_current_user, router as auth_router, verify_admin
+from config import (
+    FRONTEND_DIR,
+    IMG_SIZE,
+    JSON_PATH,
+    MODEL_PATH,
+    TTA_STEPS,
+    groq_client,
+)
+from database import get_db, init_db
+from schemas import AIAdviceRequest, FeedbackRequest, TranslateRequest
 
 
-def get_db() -> psycopg2.extensions.connection:
-    """Returns a new PostgreSQL connection with dict-style rows."""
-    return psycopg2.connect(**DB_CONFIG, cursor_factory=RealDictCursor)
+# LOAD MODEL & CLASS LABELS
+print("\n  Loading model...")
+model = load_model(MODEL_PATH)
+print("  Model loaded")
+
+with open(JSON_PATH, "r") as f:
+    class_indices: dict = json.load(f)
+
+print(f"  {len(class_indices)} classes loaded\n")
 
 
-def init_db() -> None:
-    """Creates tables if they don't exist."""
-    conn = get_db()
-    cur  = conn.cursor()
-    try:
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id         SERIAL PRIMARY KEY,
-                username   VARCHAR(50)  UNIQUE NOT NULL,
-                email      VARCHAR(255) UNIQUE NOT NULL,
-                password   VARCHAR(255) NOT NULL,
-                created_at TIMESTAMPTZ  DEFAULT NOW()
-            );
-        """)
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS predictions (
-                id              SERIAL PRIMARY KEY,
-                user_id         INTEGER REFERENCES users(id) ON DELETE SET NULL,
-                predicted_class VARCHAR(255) NOT NULL,
-                confidence      FLOAT        NOT NULL,
-                severity_pct    FLOAT        NOT NULL,
-                stage           VARCHAR(50)  NOT NULL,
-                urgency         TEXT         NOT NULL,
-                created_at      TIMESTAMPTZ  DEFAULT NOW()
-            );
-        """)
-        conn.commit()
-        print("  DB tables ready")
-    finally:
-        cur.close()
-        conn.close()
-
-
-# AUTH HELPERS 
-
-def serialize_user(user: dict) -> dict:
-    created = user.get("created_at")
-    return {
-        "id":         user["id"],
-        "username":   user["username"],
-        "email":      user["email"],
-        "created_at": created.isoformat() if created is not None else "",
-    }
-
-
-def create_access_token(user: dict) -> str:
-    expire = datetime.now(timezone.utc) + ACCESS_TOKEN_EXPIRE
-    payload = {
-        "user_id":  user["id"],
-        "username": user["username"],
-        "email":    user["email"],
-        "exp":      expire,
-    }
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
-
-
-def decode_access_token(token: str) -> dict:
-    try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token has expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Invalid token")
-
-
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
-) -> dict:
-    if credentials is None:
-        raise HTTPException(status_code=401, detail="Not authenticated")
-
-    payload = decode_access_token(credentials.credentials)
-    user_id = payload.get("user_id")
-    if not user_id:
-        raise HTTPException(status_code=401, detail="Invalid token payload")
-
-    conn = get_db()
-    cur  = conn.cursor()
-    try:
-        cur.execute(
-            "SELECT id, username, email, created_at FROM users WHERE id = %s",
-            (user_id,),
-        )
-        user = cur.fetchone()
-    finally:
-        cur.close()
-        conn.close()
-
-    if not user:
-        raise HTTPException(status_code=401, detail="User not found")
-
-    return dict(user)
-
-
-# ML HELPERS 
-
+#  ML HELPERS 
 def format_label(label: str) -> str:
     return label.replace("___", " - ").replace("_", " ").title()
 
@@ -175,10 +66,12 @@ def augment_and_preprocess(raw_arr: np.ndarray) -> np.ndarray:
 def predict_with_tta(image_bytes: bytes) -> np.ndarray:
     raw_arr    = load_raw_from_bytes(image_bytes)
     base_input = preprocess_input(np.expand_dims(raw_arr.copy(), axis=0))
-    base_pred: np.ndarray  = model.predict(base_input, verbose=0)[0]
+    base_pred: np.ndarray       = model.predict(base_input, verbose=0)[0]
     tta_preds: list[np.ndarray] = [base_pred]
     for _ in range(TTA_STEPS - 1):
-        aug_pred: np.ndarray = model.predict(augment_and_preprocess(raw_arr), verbose=0)[0]
+        aug_pred: np.ndarray = model.predict(
+            augment_and_preprocess(raw_arr), verbose=0
+        )[0]
         tta_preds.append(aug_pred)
     return np.mean(tta_preds, axis=0)
 
@@ -192,19 +85,22 @@ def calculate_severity(image_bytes: bytes, predicted_label: str) -> dict:
     if img is None:
         return {"severity_pct": 0.0, "stage": "Unknown", "urgency": "Unknown"}
 
-    img  = cv2.resize(img, (224, 224))
-    hsv  = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    mask_brown1  = cv2.inRange(hsv, np.array([10, 40, 40]),  np.array([20, 255, 255]))
-    mask_brown2  = cv2.inRange(hsv, np.array([20, 30, 30]),  np.array([35, 255, 200]))
-    mask_dark    = cv2.inRange(hsv, np.array([0,  0,  0]),   np.array([180, 255, 60]))
+    img         = cv2.resize(img, (224, 224))
+    hsv         = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    mask_brown1 = cv2.inRange(hsv, np.array([10, 40, 40]),  np.array([20, 255, 255]))
+    mask_brown2 = cv2.inRange(hsv, np.array([20, 30, 30]),  np.array([35, 255, 200]))
+    mask_dark   = cv2.inRange(hsv, np.array([0,  0,  0]),   np.array([180, 255, 60]))
     disease_mask = cv2.bitwise_or(cv2.bitwise_or(mask_brown1, mask_brown2), mask_dark)
-    leaf_mask    = cv2.inRange(hsv, np.array([35, 40, 40]),  np.array([90, 255, 255]))
+    leaf_mask    = cv2.inRange(hsv, np.array([35, 40, 40]), np.array([90, 255, 255]))
 
     diseased_pixels = cv2.countNonZero(disease_mask)
     healthy_pixels  = cv2.countNonZero(leaf_mask)
     total_pixels    = diseased_pixels + healthy_pixels
-    severity_pct    = 0.0 if total_pixels == 0 else round((diseased_pixels / total_pixels) * 100, 2)
-    severity_pct    = min(severity_pct, 95.0)
+    severity_pct    = (
+        0.0 if total_pixels == 0
+        else round((diseased_pixels / total_pixels) * 100, 2)
+    )
+    severity_pct = min(severity_pct, 95.0)
 
     if severity_pct < 25:
         stage, urgency = "Early",    "Low — monitor daily and apply preventive spray"
@@ -218,32 +114,7 @@ def calculate_severity(image_bytes: bytes, predicted_label: str) -> dict:
     return {"severity_pct": severity_pct, "stage": stage, "urgency": urgency}
 
 
-# LOAD MODEL & CLASS LABELS 
-print("\n  Loading model...")
-model = load_model(MODEL_PATH)
-print("  Model loaded")
-
-with open(JSON_PATH, "r") as f:
-    class_indices: dict = json.load(f)
-
-print(f"  {len(class_indices)} classes loaded\n")
-
-
-# PYDANTIC MODELS 
-
-class SignupRequest(BaseModel):
-    username: str
-    email:    str
-    password: str
-
-
-class LoginRequest(BaseModel):
-    email:    str | None = None   
-    username: str | None = None
-    password: str
-
-
-#  FASTAPI APP 
+#  APP INIT 
 app = FastAPI(title="Plant Disease Detection")
 
 app.add_middleware(
@@ -254,6 +125,7 @@ app.add_middleware(
 )
 
 app.mount("/static", StaticFiles(directory=FRONTEND_DIR), name="static")
+app.include_router(auth_router)
 
 
 @app.on_event("startup")
@@ -262,14 +134,9 @@ def startup() -> None:
 
 
 # FRONTEND ROUTES 
-
 @app.get("/")
-def serve_home():
-    return FileResponse(f"{FRONTEND_DIR}/index.html")
-
-@app.get("/detect")
-def serve_detect():
-    return FileResponse(f"{FRONTEND_DIR}/detect.html")
+def serve_login_page():
+    return FileResponse(f"{FRONTEND_DIR}/login.html")
 
 @app.get("/login")
 def serve_login():
@@ -279,104 +146,24 @@ def serve_login():
 def serve_register():
     return FileResponse(f"{FRONTEND_DIR}/register.html")
 
+@app.get("/detect")
+def serve_detect():
+    return FileResponse(f"{FRONTEND_DIR}/detect.html")
+
 @app.get("/history")
-def serve_history():
+def serve_history_page():
     return FileResponse(f"{FRONTEND_DIR}/history.html")
 
-
-#  AUTH ROUTES
-
-@app.post("/auth/signup", status_code=status.HTTP_201_CREATED)
-def signup(body: SignupRequest):
-    username = body.username.strip()
-    email    = body.email.strip().lower()
-
-    if len(username) < 2:
-        raise HTTPException(status_code=400, detail="Username must be at least 2 characters")
-    if len(body.password) < 8:
-        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
-
-    conn = get_db()
-    cur  = conn.cursor()
-    try:
-        cur.execute("SELECT id FROM users WHERE username = %s", (username,))
-        if cur.fetchone():
-            raise HTTPException(status_code=400, detail="Username already taken")
-
-        cur.execute("SELECT id FROM users WHERE email = %s", (email,))
-        if cur.fetchone():
-            raise HTTPException(status_code=400, detail="Email already registered")
-
-        hashed = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode()
-        cur.execute(
-            "INSERT INTO users (username, email, password) VALUES (%s, %s, %s)",
-            (username, email, hashed),
-        )
-        conn.commit()
-    except HTTPException:
-        raise
-    except Exception as e:
-        conn.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        cur.close()
-        conn.close()
-
-    return {"message": "Account created successfully"}
+@app.get("/admin")
+def serve_admin():
+    return FileResponse(f"{FRONTEND_DIR}/admin.html")
 
 
-@app.post("/auth/login")
-def login(body: LoginRequest):
-    # Accept either email or username field
-    identifier = (body.email or body.username or "").strip().lower()
-    if not identifier:
-        raise HTTPException(status_code=400, detail="Email is required")
-
-    conn = get_db()
-    cur  = conn.cursor()
-    try:
-        cur.execute(
-            """
-            SELECT id, username, email, password, created_at
-            FROM users
-            WHERE lower(email) = %s OR lower(username) = %s
-            """,
-            (identifier, identifier),
-        )
-        user = cur.fetchone()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        cur.close()
-        conn.close()
-
-    if user is None:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    user_dict = dict(user)
-    if not bcrypt.checkpw(body.password.encode(), user_dict["password"].encode()):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-
-    access_token = create_access_token(user_dict)
-    return {
-        "message":      "Login successful",
-        "access_token": access_token,
-        "token_type":   "bearer",
-        "expires_in":   int(ACCESS_TOKEN_EXPIRE.total_seconds()),
-        "user":         serialize_user(user_dict),
-    }
-
-
-@app.get("/auth/me")
-def read_current_user(current_user: dict = Depends(get_current_user)):
-    return {"user": serialize_user(current_user)}
-
-
-# PREDICT ROUTE 
+# PREDICT ROUTE
 @app.post("/predict")
 async def predict(
     file:         UploadFile = File(...),
-    current_user: dict       = Depends(get_current_user),   # JWT required
+    current_user: dict       = Depends(get_current_user),
 ):
     image_bytes     = await file.read()
     predictions     = predict_with_tta(image_bytes)
@@ -421,11 +208,153 @@ async def predict(
     }
 
 
-#  HISTORY API ROUTE 
+#  GROQ AI ADVICE ROUTE
+@app.post("/gemini-advice")
+async def gemini_advice(
+    body:         AIAdviceRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    if groq_client is None:
+        raise HTTPException(status_code=503, detail="Groq API key not configured")
 
+    is_healthy = "healthy" in body.predicted_class.lower()
+
+    if is_healthy:
+        prompt = f"""You are an expert agronomist assistant helping Indian farmers.
+
+A plant disease detection system has scanned a plant leaf and found it is HEALTHY.
+Plant: {body.predicted_class}
+Confidence: {body.confidence}%
+
+Respond ONLY with a JSON object (no markdown, no extra text) with these exact keys:
+{{
+  "summary": "One friendly sentence congratulating the farmer and encouraging continued care.",
+  "what_is_this": "Brief 2-sentence explanation of what the healthy status means.",
+  "immediate_actions": ["action1", "action2", "action3"],
+  "prevention_tips": ["tip1", "tip2", "tip3"],
+  "farmer_tip": "One practical tip specific to growing this crop well in India.",
+  "risk_level": "None"
+}}"""
+    else:
+        prompt = f"""You are an expert agronomist assistant helping Indian farmers.
+
+A plant disease detection ML model has diagnosed the following:
+- Disease: {body.predicted_class}
+- Confidence: {body.confidence}%
+- Severity: {body.severity_pct}% of leaf infected
+- Stage: {body.stage}
+- Urgency: {body.urgency}
+
+Respond ONLY with a JSON object (no markdown, no extra text) with these exact keys:
+{{
+  "summary": "One urgent but calm sentence summarising the situation for a farmer.",
+  "what_is_this": "2-sentence plain-language explanation of this disease: what it is and how it spreads.",
+  "immediate_actions": ["Specific action 1 with dosage/timing", "Specific action 2", "Specific action 3"],
+  "prevention_tips": ["Prevention tip 1 for next season", "Prevention tip 2", "Prevention tip 3"],
+  "farmer_tip": "One local/practical tip relevant to Indian farming conditions.",
+  "risk_level": "{body.stage}"
+}}
+
+Be specific, practical, and use simple language. Include specific fungicide/pesticide names where relevant."""
+
+    raw_text = ""
+    try:
+        print(f"[Groq] Calling API for: {body.predicted_class}")
+
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role":    "system",
+                    "content": "You are an expert agronomist. Always respond with valid JSON only. "
+                               "No markdown, no explanation, just the JSON object.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=1000,
+            temperature=0.3,
+        )
+
+        raw_text = (response.choices[0].message.content or "").strip()
+        print(f"[Groq] Raw response: {raw_text[:200]}")
+
+        raw_text = re.sub(r"^```(?:json)?\s*\n?", "", raw_text)
+        raw_text = re.sub(r"\n?```\s*$", "", raw_text).strip()
+
+        advice = json.loads(raw_text)
+        return {"success": True, "advice": advice, "model": "llama-3.1-8b-instant"}
+
+    except json.JSONDecodeError as e:
+        print(f"[Groq] JSON parse error: {e}\nRaw text: {raw_text}")
+        return {
+            "success": False,
+            "advice":  {"summary": raw_text},
+            "model":   "llama-3.1-8b-instant",
+            "error":   f"JSON parse error: {str(e)}",
+        }
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        print(f"[Groq] Exception: {type(e).__name__}: {str(e)}")
+        if "rate_limit" in str(e).lower() or "429" in str(e):
+            raise HTTPException(
+                status_code=429,
+                detail="AI quota exceeded. Please try again in a minute.",
+            )
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+
+
+#  TRANSLATE ROUTE 
+@app.post("/api/translate")
+async def translate_result(
+    body:         TranslateRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    if groq_client is None:
+        raise HTTPException(status_code=503, detail="Groq not configured")
+
+    lang_names = {"hi": "Hindi", "te": "Telugu", "ta": "Tamil", "kn": "Kannada"}
+    lang_name  = lang_names.get(body.lang)
+    if not lang_name:
+        raise HTTPException(status_code=400, detail="Unsupported language")
+
+    is_healthy = "healthy" in body.predicted_class.lower()
+
+    if is_healthy:
+        source = "Your plant is healthy! No disease detected. Continue regular care and monitor weekly."
+    else:
+        source = (
+            f"Your plant has {body.predicted_class} at {body.stage.lower()} stage — "
+            f"{body.severity_pct}% of the leaf is infected. "
+            f"Follow the treatment steps shown immediately."
+        )
+
+    prompt = f"Translate this exactly to {lang_name}. Return ONLY the translated text, nothing else:\n\n{source}"
+
+    try:
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role":    "system",
+                    "content": f"You are a translator. Translate to {lang_name} only. "
+                               "Return only the translated text with no explanation.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=300,
+            temperature=0.1,
+        )
+        translated = (response.choices[0].message.content or "").strip()
+        return {"translated": translated, "lang": body.lang}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Translation error: {str(e)}")
+
+
+#  HISTORY ROUTE
 @app.get("/api/history")
 def get_history(current_user: dict = Depends(get_current_user)):
-    """Returns predictions for the logged-in user only, newest first."""
     conn = get_db()
     cur  = conn.cursor()
     try:
@@ -456,20 +385,284 @@ def get_history(current_user: dict = Depends(get_current_user)):
     return {"records": records}
 
 
-#  STATIC FILE FALLBACK 
+# FEEDBACK ROUTE 
+@app.post("/feedback", status_code=201)
+def submit_feedback(
+    body:         FeedbackRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    if body.rating < 1 or body.rating > 5:
+        raise HTTPException(status_code=400, detail="Rating must be 1–5")
+    if not body.category:
+        raise HTTPException(status_code=400, detail="Category is required")
 
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute(
+            """
+            INSERT INTO feedback (user_id, rating, category, message, is_farmer)
+            VALUES (%s, %s, %s, %s, %s)
+            """,
+            (
+                current_user["id"],
+                body.rating,
+                body.category.strip(),
+                body.message.strip()[:500],
+            ),
+        )
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Feedback submitted successfully"}
+
+
+# ADMIN ROUTES
+@app.get("/admin/feedback")
+def get_all_feedback(
+    _admin: dict = Depends(verify_admin),
+    limit:  int  = 500,
+    offset: int  = 0,
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute(
+            """
+            SELECT f.id, f.rating, f.category, f.message,
+                   f.is_farmer, f.created_at, u.username
+            FROM feedback f
+            LEFT JOIN users u ON f.user_id = u.id
+            ORDER BY f.created_at DESC
+            LIMIT %s OFFSET %s
+            """,
+            (limit, offset),
+        )
+        rows = cur.fetchall()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    records = []
+    for row in rows:
+        r = dict(row)
+        if r.get("created_at"):
+            r["created_at"] = r["created_at"].isoformat()
+        records.append(r)
+
+    return {"feedback": records, "count": len(records)}
+
+
+@app.get("/admin/users")
+def get_all_users(
+    _admin: dict = Depends(verify_admin),
+    limit:  int  = 500,
+    offset: int  = 0,
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute(
+            """
+            SELECT id, username, email, is_admin, created_at
+            FROM users
+            ORDER BY created_at DESC
+            LIMIT %s OFFSET %s
+            """,
+            (limit, offset),
+        )
+        rows = cur.fetchall()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    records = []
+    for row in rows:
+        r = dict(row)
+        if r.get("created_at"):
+            r["created_at"] = r["created_at"].isoformat()
+        records.append(r)
+
+    return {"users": records, "count": len(records)}
+
+
+@app.get("/admin/detections")
+def get_all_detections(
+    _admin: dict = Depends(verify_admin),
+    limit:  int  = 1000,
+    offset: int  = 0,
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute(
+            """
+            SELECT p.id, p.user_id, p.predicted_class, p.confidence,
+                   p.severity_pct, p.stage, p.urgency, p.created_at,
+                   u.username
+            FROM predictions p
+            LEFT JOIN users u ON p.user_id = u.id
+            ORDER BY p.created_at DESC
+            LIMIT %s OFFSET %s
+            """,
+            (limit, offset),
+        )
+        rows = cur.fetchall()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    records = []
+    for row in rows:
+        r = dict(row)
+        if r.get("created_at"):
+            r["created_at"] = r["created_at"].isoformat()
+        records.append(r)
+
+    return {"detections": records, "count": len(records)}
+
+
+@app.patch("/admin/users/{user_id}/toggle-admin")
+def toggle_admin(
+    user_id: int,
+    _admin:  dict = Depends(verify_admin),
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("SELECT id, is_admin FROM users WHERE id = %s", (user_id,))
+        user = cur.fetchone()
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        user       = dict(user)
+        new_status = not user["is_admin"]
+        cur.execute(
+            "UPDATE users SET is_admin = %s WHERE id = %s",
+            (new_status, user_id),
+        )
+        conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {
+        "message":  f"User {'promoted to admin' if new_status else 'demoted to normal user'}",
+        "user_id":  user_id,
+        "is_admin": new_status,
+    }
+
+@app.delete("/admin/users/{user_id}")
+def admin_delete_user(
+    user_id: int,
+    _admin:  dict = Depends(verify_admin),
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # delete child rows first (skip if you have ON DELETE CASCADE FKs)
+        cur.execute("DELETE FROM predictions WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM feedback    WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM users       WHERE id      = %s", (user_id,))
+        conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "User deleted successfully"}
+
+
+@app.delete("/admin/detections/{detection_id}")
+def admin_delete_detection(
+    detection_id: int,
+    _admin:       dict = Depends(verify_admin),
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("SELECT id FROM predictions WHERE id = %s", (detection_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Detection not found")
+
+        cur.execute("DELETE FROM predictions WHERE id = %s", (detection_id,))
+        conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Detection deleted successfully"}
+
+
+@app.delete("/admin/feedback/{feedback_id}")
+def admin_delete_feedback(
+    feedback_id: int,
+    _admin:      dict = Depends(verify_admin),
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("SELECT id FROM feedback WHERE id = %s", (feedback_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Feedback not found")
+
+        cur.execute("DELETE FROM feedback WHERE id = %s", (feedback_id,))
+        conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Feedback deleted successfully"}
+
+
+
+#  STATIC FILE FALLBACK
 @app.get("/{filename:path}")
 def serve_file(filename: str):
     filepath = os.path.join(FRONTEND_DIR, filename)
     if os.path.exists(filepath) and os.path.isfile(filepath):
         return FileResponse(filepath)
-    return FileResponse(f"{FRONTEND_DIR}/index.html")
+    return FileResponse(f"{FRONTEND_DIR}/login.html")
 
 
-# RUN APP
+#  RUN
 if __name__ == "__main__":
     def open_browser():
         time.sleep(2)
-        webbrowser.open("http://localhost:8000")
+        webbrowser.open("http://localhost:8000/login.html")
+
     threading.Thread(target=open_browser, daemon=True).start()
     uvicorn.run(app, host="0.0.0.0", port=8000)

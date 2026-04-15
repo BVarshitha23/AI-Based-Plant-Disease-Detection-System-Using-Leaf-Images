@@ -1,8 +1,8 @@
 const Session = {
-  //  Check login 
+  // Check login 
   isLoggedIn: () => !!sessionStorage.getItem("ls_user"),
 
-  // Register 
+  //  Register 
   register: async (username, email, password) => {
     try {
       const res = await fetch("/auth/signup", {
@@ -13,7 +13,7 @@ const Session = {
       const data = await res.json();
 
       if (res.ok) {
-        return { ok: true };
+        return { ok: true };  
       } else {
         return { ok: false, error: data.detail || "Registration failed" };
       }
@@ -23,12 +23,12 @@ const Session = {
   },
 
   //  Login 
-  login: async (email, password) => {
+  login: async (email, password, captchaToken = "") => {
     try {
       const res = await fetch("/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, captcha_token: captchaToken }),
       });
 
       const data = await res.json();
@@ -37,11 +37,13 @@ const Session = {
         const session = {
           ...data.user,
           token: data.access_token,
+          role:  data.role,
         };
 
         sessionStorage.setItem("ls_user", JSON.stringify(session));
+        sessionStorage.setItem("access_token", data.access_token);
 
-        return { ok: true, user: data.user };
+        return { ok: true, user: data.user, role: data.role };
       } else {
         return { ok: false, error: data.detail || "Login failed" };
       }
@@ -50,12 +52,13 @@ const Session = {
     }
   },
 
-  //  Logout ─
+  //  Logout 
   logout: () => {
     sessionStorage.removeItem("ls_user");
+    sessionStorage.removeItem("access_token");
   },
 
-  // Get user 
+  //  Get user 
   getUser: () => {
     const raw = sessionStorage.getItem("ls_user");
     return raw ? JSON.parse(raw) : null;
@@ -68,13 +71,13 @@ const Session = {
     return JSON.parse(raw).token || null;
   },
 
-  //  Auth header 
+  // Auth header 
   authHeaders: () => {
     const token = Session.getToken();
     return token ? { Authorization: `Bearer ${token}` } : {};
   },
 
-  //  Protect pages 
+  // Protect pages 
   requireAuth: () => {
     if (!Session.isLoggedIn()) {
       window.location.href = "login.html";
@@ -83,7 +86,7 @@ const Session = {
     return true;
   },
 
-  //  Navbar (Profile instead of Logout) 
+  // Navbar (Profile instead of Logout) 
   renderProtectedNav: () => {
     const navAuth = document.getElementById("navAuth");
     if (!navAuth) return;
@@ -101,7 +104,7 @@ const Session = {
     }
   },
 
-  //  Sync user from backend 
+  // Sync user from backend 
   syncUser: async () => {
     try {
       const res = await fetch("/auth/me", {
@@ -120,6 +123,8 @@ const Session = {
       const updated = {
         ...current,
         ...data.user,
+        role:  current.role,
+        token: current.token,
       };
 
       sessionStorage.setItem("ls_user", JSON.stringify(updated));
@@ -131,7 +136,7 @@ const Session = {
   },
 };
 
-//  Toast helper 
+// Toast helper 
 function showToast(type, message) {
   const toast = document.createElement("div");
   toast.className = `toast toast-${type}`;

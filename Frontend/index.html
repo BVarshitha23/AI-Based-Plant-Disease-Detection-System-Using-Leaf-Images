@@ -6,41 +6,53 @@
     <title>LeafSense — Plant Disease Detection</title>
     <link rel="icon" type="image/png" href="favicon.png" />
     <link rel="stylesheet" href="static/CSS/style.css" />
-    <link rel="stylesheet" href="static/CSS/Home.css" />
+    <link rel="stylesheet" href="static/CSS/home.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap"
       rel="stylesheet"
     />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="Script/auth.js"></script>
   </head>
   <body>
     <!-- NAVBAR -->
     <nav class="navbar">
-      <div class="logo">
-        <div class="logo-icon">
-          <i
-            data-lucide="leaf"
-            style="width: 20px; height: 20px; color: #fff"
-          ></i>
-        </div>
-        <span class="logo-text">LeafSense</span>
-      </div>
-      <div class="nav-links">
-        <a href="index.html"style="color:var(--leaf)">Home</a>
-        <a href="detect.html">Detect</a>
-        <a href="history.html">History</a>
-        <a href="profile.html">Profile</a>
-        <!-- <a href="#how">How it Works</a> -->
-        <div class="nav-auth" id="navAuth">
-      </div>
-        <!-- Logout link will be added here if logged in -->
-      </div>
-      <!-- Logout button will be added here if logged in -->
-      <!-- <a href="detect.html" class="btn-primary">
-      <i data-lucide="scan-line" style="width:15px;height:15px;"></i> Scan Now
-    </a> -->
-    </nav>
+  <a href="index.html" class="logo">
+    <div class="logo-icon">
+      <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
+    </div>
+    <span class="logo-text">LeafSense</span>
+  </a>
+
+  <!-- Desktop nav links -->
+  <div class="nav-links">
+    <a href="index.html" >Home</a>
+    <a href="about.html">About</a>
+    <a href="detect.html">Detect</a>
+    <a href="history.html">History</a>
+    <a href="feedback.html">Feedback</a>
+    <!-- <a href="profile.html">Profile</a> -->
+  </div>
+
+  <!-- Desktop right: profile / login -->
+  <div class="nav-right" id="navRight"></div>
+
+  <!-- Hamburger (mobile) -->
+  <button class="hamburger" id="hamburger" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- Mobile drawer -->
+  <div class="mobile-nav" id="mobileNav">
+    <a href="index.html">Home</a>
+    <a href="about.html">About</a>
+    <a href="detect.html">Detect</a>
+    <a href="history.html">History</a>
+    <a href="profile.html">Profile</a>
+    <a href="feedback.html">Feedback</a>
+    <div id="mobileNavAuth"></div>
+  </div>
+  </div>
+  </nav>
 
     <!-- HERO SECTION -->
     <section class="hero">
@@ -131,15 +143,17 @@
         </div>
         <span class="logo-text">LeafSense</span>
       </div>
-      <p>AI-Based Plant Disease Detection · Built for Indian Farmers</p>
-      <p class="helpline">Kisan Helpline: <strong>1800-180-1551</strong></p>
+      <p>AI-Based Plant Disease Detection · Built for Farmers</p>
     </footer>
 
-    <script src="./Scripts/home.js"></script>
+    <script src="Scripts/home.js"></script>
+    <script src="Scripts/auth.js"></script>
+    <script src="Scripts/navbar.js"></script>
     <script>
       lucide.createIcons();
+      initNavbar('home');
     </script>
-    <script>
+    <!-- <script>
       if (Session.isLoggedIn()) {
         const navAuth = document.getElementById("navAuth");
         navAuth.innerHTML =
@@ -155,6 +169,6 @@
           window.location.href = "index.html";
         }, 700);
       }
-    </script>
+    </> -->
   </body>
 </html>

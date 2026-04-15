@@ -12,57 +12,60 @@
       rel="stylesheet"
     />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
-    <script src="Script/auth.js"></script>
-    <script>
-      Session.requireAuth();
-    </script>
   </head>
   <body>
     <nav class="navbar">
       <a href="index.html" class="logo">
         <div class="logo-icon">
-          <i
-            data-lucide="leaf"
-            style="width: 20px; height: 20px; color: #fff"
-          ></i>
+          <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
         </div>
         <span class="logo-text">LeafSense</span>
       </a>
       <div class="nav-links">
         <a href="index.html">Home</a>
+        <a href="about.html">About</a>
         <a href="detect.html">Detect</a>
         <a href="history.html">History</a>
-        <a href="profile.html" style="color:var(--leaf)">Profile</a>
-        <!-- <div class="nav-auth" id="navAuth"></div> -->
+        <a href="feedback.html">Feedback</a>
       </div>
+      <div class="nav-right" id="navRight"></div>
+      <button class="hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+      <div class="mobile-nav" id="mobileNav">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="detect.html">Detect</a>
+        <a href="history.html">History</a>
+        <a href="profile.html" class="active">Profile</a>
+        <a href="feedback.html">Feedback</a>
+        <div id="mobileNavAuth"></div>
       </div>
     </nav>
 
     <section class="profile-section">
       <div class="profile-shell">
+
+        <!-- Hero -->
         <div class="profile-hero">
           <div class="profile-avatar-wrap">
             <div class="profile-avatar">
-              <i data-lucide="user-round" style="width: 46px; height: 46px"></i>
+              <i data-lucide="user-round" style="width:46px;height:46px"></i>
             </div>
           </div>
-
           <div class="profile-hero-copy">
             <div class="profile-kicker">My Profile</div>
             <h1 id="profileName">Loading...</h1>
             <p id="profileEmail">Checking your account details</p>
           </div>
-
-          <!-- <div class="profile-status">
-            <i data-lucide="shield-check" style="width: 16px; height: 16px"></i>
-            JWT Secured
-          </div> -->
         </div>
 
+        <!-- Grid -->
         <div class="profile-grid">
+
+          <!-- Account Details -->
           <div class="profile-card">
             <div class="profile-card-title">Account Details</div>
-
             <div class="detail-list">
               <div class="detail-row">
                 <span class="detail-label">Username</span>
@@ -79,40 +82,152 @@
             </div>
           </div>
 
+          <!-- Session -->
           <div class="profile-card">
             <div class="profile-card-title">Session</div>
             <p class="profile-copy">
-              Your account is using a JWT token.
-              <!-- with a 1 day expiry.  -->
-              <!-- No auto refresh is enabled right now. -->
+              Your account is secured with a JWT token.
             </p>
-
             <button class="profile-logout-btn" id="logoutBtn" type="button">
-              <i data-lucide="log-out" style="width: 18px; height: 18px"></i>
+              <i data-lucide="log-out" style="width:18px;height:18px"></i>
               Logout
             </button>
           </div>
+
+          <!-- Detection Stats -->
+          <div class="profile-card profile-card--stats">
+            <div class="profile-card-title">Detection Stats</div>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <div class="stat-value" id="statTotal">—</div>
+                <div class="stat-label">Total Scans</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value stat-value--sm" id="statTopDisease">—</div>
+                <div class="stat-label">Top Prediction</div>
+              </div>
+              <div class="stat-item">
+                <div class="stat-value stat-value--sm" id="statLastScan">—</div>
+                <div class="stat-label">Last Scan</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Change Password -->
+          <div class="profile-card">
+            <div class="profile-card-title">Change Password</div>
+            <div class="pwd-form">
+              <div class="pwd-field">
+                <label class="pwd-label">Current Password</label>
+                <div class="pwd-input-wrap">
+                  <input class="pwd-input" type="password" id="pwdCurrent" placeholder="Enter current password" />
+                  <button class="pwd-eye" type="button" onclick="togglePwd('pwdCurrent', this)">
+                    <i data-lucide="eye" style="width:15px;height:15px"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="pwd-field">
+                <label class="pwd-label">New Password</label>
+                <div class="pwd-input-wrap">
+                  <input class="pwd-input" type="password" id="pwdNew" placeholder="Min. 8 characters" />
+                  <button class="pwd-eye" type="button" onclick="togglePwd('pwdNew', this)">
+                    <i data-lucide="eye" style="width:15px;height:15px"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="pwd-field">
+                <label class="pwd-label">Confirm New Password</label>
+                <div class="pwd-input-wrap">
+                  <input class="pwd-input" type="password" id="pwdConfirm" placeholder="Confirm new password" />
+                  <button class="pwd-eye" type="button" onclick="togglePwd('pwdConfirm', this)">
+                    <i data-lucide="eye" style="width:15px;height:15px"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="pwd-msg" id="pwdMsg"></div>
+              <button class="profile-logout-btn pwd-submit-btn" type="button" onclick="changePassword()">
+                <i data-lucide="lock-keyhole" style="width:17px;height:17px"></i>
+                Update Password
+              </button>
+            </div>
+          </div>
+
+          
+          <!-- Danger Zone -->
+          <div class="profile-card profile-card--danger">
+            <div class="profile-card-title danger-title">Danger Zone</div>
+              <p class="profile-copy">
+               Permanently delete your account and all associated data.
+               This action cannot be revoked.
+              </p>
+
+          <div class="danger-list">
+          <div class="danger-list-item">
+          <i data-lucide="scan-line" style="width:15px;height:15px"></i>
+            All detection history will be erased
+          </div>
+          <div class="danger-list-item">
+          <i data-lucide="message-square-heart" style="width:15px;height:15px"></i>
+            All feedback submissions removed
+          </div>
+          <div class="danger-list-item">
+          <i data-lucide="user-round-x" style="width:15px;height:15px"></i>
+            Your account cannot be recovered
+          </div>
+          <div class="danger-list-item">
+            <i data-lucide="image-off" style="width:15px;height:15px"></i>
+            Uploaded images permanently deleted
+          </div>
+        </div>
+
+        <button class="danger-btn" type="button" onclick="showDeleteConfirm()">
+          <i data-lucide="trash-2" style="width:17px;height:17px"></i>
+            Delete My Account
+        </button>
+      </div>
+
+        </div><!-- /profile-grid -->
+      </div><!-- /profile-shell -->
+    </section>
+
+    <!-- Delete Confirm Modal -->
+    <div class="modal-backdrop" id="deleteModal" style="display:none" onclick="hideDeleteConfirm()">
+      <div class="modal-box" onclick="event.stopPropagation()">
+        <div class="modal-icon">
+          <i data-lucide="triangle-alert" style="width:28px;height:28px"></i>
+        </div>
+        <h2 class="modal-title">Delete Account?</h2>
+        <p class="modal-body">
+          Type <strong>DELETE</strong> below to confirm. All your detections
+          and feedback will be permanently removed.
+        </p>
+        <input class="pwd-input" type="text" id="deleteConfirmInput" placeholder="Type DELETE to confirm" />
+        <div class="modal-actions">
+          <button class="modal-cancel" type="button" onclick="hideDeleteConfirm()">Cancel</button>
+          <button class="modal-confirm" type="button" id="deleteConfirmBtn" onclick="deleteAccount()" disabled>
+            <i data-lucide="trash-2" style="width:15px;height:15px"></i>
+            Yes, delete
+          </button>
         </div>
       </div>
-    </section>
+    </div>
 
     <footer class="site-footer">
       <div class="logo">
         <div class="logo-icon">
-          <i
-            data-lucide="leaf"
-            style="width: 20px; height: 20px; color: #fff"
-          ></i>
+          <i data-lucide="leaf" style="width:20px;height:20px;color:#fff"></i>
         </div>
         <span class="logo-text">LeafSense</span>
       </div>
-      <p>AI-Based Plant Disease Detection - Built for Indian Farmers</p>
-      <p class="helpline">Kisan Helpline: <strong>1800-180-1551</strong></p>
+      <p>AI-Based Plant Disease Detection - Built for Farmers</p>
     </footer>
 
+    <script src="Scripts/auth.js"></script>
     <script src="Scripts/profile.js"></script>
+    <script src="Scripts/navbar.js"></script>
     <script>
       lucide.createIcons();
+      initNavbar('profile');
     </script>
   </body>
 </html>

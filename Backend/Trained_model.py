@@ -14,9 +14,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from sklearn.utils.class_weight import compute_class_weight
 
 
-# ─────────────────────────────────────────────
 # CONFIG
-# ─────────────────────────────────────────────
 TRAIN_DIR   = r"D:\Custom_dataset\train"
 VAL_DIR     = r"D:\Custom_dataset\val"
 OUTPUT_DIR  = r"D:\Custom_dataset\Output"
@@ -29,9 +27,8 @@ EPOCHS      = 15
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 
-# ─────────────────────────────────────────────
+
 # DATA GENERATORS
-# ─────────────────────────────────────────────
 def create_generators():
     train_datagen = ImageDataGenerator(
         preprocessing_function=preprocess_input,
@@ -66,9 +63,7 @@ def create_generators():
     return train_gen, val_gen
 
 
-# ─────────────────────────────────────────────
 # CLASS WEIGHTS
-# ─────────────────────────────────────────────
 def get_class_weights(train_gen):
     classes = np.unique(train_gen.classes)
     weights = compute_class_weight('balanced', classes=classes, y=train_gen.classes)
@@ -80,9 +75,8 @@ def get_class_weights(train_gen):
     return cw_dict
 
 
-# ─────────────────────────────────────────────
+
 # BUILD MODEL
-# ─────────────────────────────────────────────
 def build_model():
     print("\nBuilding MobileNetV2 model...")
     base = MobileNetV2(
@@ -106,9 +100,8 @@ def build_model():
     return model
 
 
-# ─────────────────────────────────────────────
+
 # CALLBACKS
-# ─────────────────────────────────────────────
 def make_callbacks():
     return [
         EarlyStopping(
@@ -133,9 +126,8 @@ def make_callbacks():
     ]
 
 
-# ─────────────────────────────────────────────
+
 # TRAINING
-# ─────────────────────────────────────────────
 def train_model(model, train_gen, val_gen, class_weights):
     print(f"\n{'='*50}")
     print("  TRAINING ")
@@ -161,10 +153,7 @@ def train_model(model, train_gen, val_gen, class_weights):
     print(f"  Best val_accuracy: {best_val:.2f}%")
     return history
 
-
-# ─────────────────────────────────────────────
 # SAVE CLASS LABELS
-# ─────────────────────────────────────────────
 def save_class_labels(train_gen):
     index_to_label = {str(v): k for k, v in train_gen.class_indices.items()}
     path = os.path.join(OUTPUT_DIR, "class_labels.json")
@@ -173,9 +162,8 @@ def save_class_labels(train_gen):
     print(f"\n  class_labels.json saved → {path}")
 
 
-# ─────────────────────────────────────────────
+
 # PLOT TRAINING HISTORY
-# ─────────────────────────────────────────────
 def plot_history(history):
     acc     = history.history['accuracy']
     val_acc = history.history['val_accuracy']
@@ -208,9 +196,8 @@ def plot_history(history):
     plt.show()
 
 
-# ─────────────────────────────────────────────
+
 # MAIN
-# ─────────────────────────────────────────────
 if __name__ == "__main__":
 
     # Step 1 — Load data

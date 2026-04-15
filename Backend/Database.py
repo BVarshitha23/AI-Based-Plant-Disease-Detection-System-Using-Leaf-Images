@@ -1,6 +1,6 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from Config import DB_CONFIG
+from config import DB_CONFIG
 
 
 def get_db() -> psycopg2.extensions.connection:
@@ -44,7 +44,6 @@ def init_db() -> None:
                 rating     SMALLINT     NOT NULL CHECK (rating BETWEEN 1 AND 5),
                 category   VARCHAR(50)  NOT NULL,
                 message    TEXT,
-                is_farmer  BOOLEAN      DEFAULT FALSE,
                 created_at TIMESTAMPTZ  DEFAULT NOW()
             );
         """)

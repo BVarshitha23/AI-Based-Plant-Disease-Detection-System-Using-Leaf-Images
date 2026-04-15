@@ -17,6 +17,8 @@ lucide.createIcons();
 let allUsers      = [];
 let allDetections = [];
 let allFeedback   = [];
+let fbRatingChartInstance = null;
+let fbCatChartInstance    = null;
 
 // Cached filtered lists (used by pagination)
 let _filteredUsers      = [];
@@ -377,6 +379,13 @@ function renderUsers(users) {
           ${u.is_admin ? 'Demote' : 'Make Admin'}
         </button>
       </td>
+      <td>
+        <button class="ad-view-btn ad-btn--danger"
+          onclick="event.stopPropagation();deleteUser(${u.id}, '${escHtml(u.username)}')">
+          <i data-lucide="trash-2" style="width:12px;height:12px"></i>
+          Delete
+        </button>
+      </td>
     </tr>`;
   }).join('');
 
@@ -417,6 +426,82 @@ function clearUserSearch() {
   document.getElementById('userSearch').value = '';
   document.getElementById('userClearBtn').style.display = 'none';
   filterUsers();
+}
+
+async function deleteUser(userId, username) {
+  const confirmed = confirm(`Delete user "${username}"?\n\nThis will permanently remove the account and all their data.`);
+  if (!confirmed) return;
+ 
+  try {
+    const res = await fetch(`/admin/users/${userId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    if (res.status === 401) { adminLogout(); return; }
+    if (res.ok) {
+      allUsers      = allUsers.filter(u => u.id !== userId);
+      allDetections = allDetections.filter(d => d.user_id !== userId);
+      _filteredUsers = _filteredUsers.filter(u => u.id !== userId);
+      document.getElementById('navBadgeUsers').textContent = allUsers.length;
+      document.getElementById('navBadgeDetections').textContent = allDetections.length;
+      renderUsers(_filteredUsers);
+      renderOverview();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.message || 'Failed to delete user.');
+    }
+  } catch {
+    alert('Network error. Please try again.');
+  }
+}
+ 
+async function deleteDetection(detectionId) {
+  const confirmed = confirm('Delete this detection record?\n\nThis action cannot be undone.');
+  if (!confirmed) return;
+ 
+  try {
+    const res = await fetch(`/admin/detections/${detectionId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    if (res.status === 401) { adminLogout(); return; }
+    if (res.ok) {
+      allDetections       = allDetections.filter(d => d.id !== detectionId);
+      _filteredDetections = _filteredDetections.filter(d => d.id !== detectionId);
+      document.getElementById('navBadgeDetections').textContent = allDetections.length;
+      renderDetections(_filteredDetections);
+      renderOverview();
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.message || 'Failed to delete detection.');
+    }
+  } catch {
+    alert('Network error. Please try again.');
+  }
+}
+ 
+async function deleteFeedback(feedbackId) {
+  const confirmed = confirm('Delete this feedback entry?\n\nThis action cannot be undone.');
+  if (!confirmed) return;
+ 
+  try {
+    const res = await fetch(`/admin/feedback/${feedbackId}`, {
+      method: 'DELETE',
+      headers: authHeaders()
+    });
+    if (res.status === 401) { adminLogout(); return; }
+    if (res.ok) {
+      allFeedback = allFeedback.filter(f => f.id !== feedbackId);
+      document.getElementById('navBadgeFeedback').textContent = allFeedback.length;
+      computeFeedbackStats();   
+      applyFilters();          
+    } else {
+      const err = await res.json().catch(() => ({}));
+      alert(err.message || 'Failed to delete feedback.');
+    }
+  } catch {
+    alert('Network error. Please try again.');
+  }
 }
 
 function viewUser(userId) {
@@ -533,6 +618,13 @@ function renderDetections(detections) {
       <td>${d.severity_pct}%</td>
       <td><span class="ad-badge ad-badge--${STAGE_BADGE[d.stage] || 'gray'}">${escHtml(d.stage)}</span></td>
       <td style="color:var(--text-soft)">${fmtDateTime(d.created_at)}</td>
+      <td>
+        <button class="ad-view-btn ad-btn--danger"
+          onclick="deleteDetection(${d.id})">
+          <i data-lucide="trash-2" style="width:12px;height:12px"></i>
+          Delete
+        </button>
+      </td>
     </tr>`).join('');
 
   lucide.createIcons();
@@ -554,26 +646,136 @@ function clearDetectSearch() {
 function computeFeedbackStats() {
   const total = allFeedback.length;
   document.getElementById('statTotal').textContent = total;
-
+ 
   if (!total) {
     document.getElementById('statAvgRating').textContent    = '—';
     document.getElementById('statSatisfaction').textContent = '—';
     document.getElementById('statTopCat').textContent       = '—';
+    renderFeedbackCharts([]);   
     return;
   }
-
+ 
   const avg = (allFeedback.reduce((s, f) => s + f.rating, 0) / total).toFixed(1);
   document.getElementById('statAvgRating').textContent = `${avg} / 5`;
-
+ 
   const happy        = allFeedback.filter(f => f.rating >= 4).length;
   const satisfaction = Math.round((happy / total) * 100);
   document.getElementById('statSatisfaction').textContent = `${satisfaction}%`;
-
+ 
   const catCount = {};
   allFeedback.forEach(f => { catCount[f.category] = (catCount[f.category] || 0) + 1; });
-  const topCat = Object.entries(catCount).sort((a,b) => b[1]-a[1])[0];
+  const topCat = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0];
   document.getElementById('statTopCat').textContent =
     topCat ? (CAT_LABELS[topCat[0]] || topCat[0]) : '—';
+ 
+  //  render the two charts
+  renderFeedbackCharts(allFeedback);
+}
+
+function renderFeedbackCharts(feedbackData) {
+ 
+  //  Rating Distribution Bar Chart
+  const ratingCounts = [1, 2, 3, 4, 5].map(
+    r => feedbackData.filter(f => f.rating === r).length
+  );
+ 
+  const ratingCtx = document.getElementById('fbRatingChart').getContext('2d');
+ 
+  if (fbRatingChartInstance) fbRatingChartInstance.destroy();
+ 
+  fbRatingChartInstance = new Chart(ratingCtx, {
+    type: 'bar',
+    data: {
+      labels: ['1 ★', '2 ★', '3 ★', '4 ★', '5 ★'],
+      datasets: [{
+        label: 'Responses',
+        data: ratingCounts,
+        backgroundColor: [
+          'rgba(198, 40,  40,  0.80)',   // 1★ red
+          'rgba(230, 81,  0,   0.85)',   // 2★ deep orange
+          'rgba(106, 27,  154, 0.80)',   // 3★ purple
+          'rgba(0,   121, 107, 0.82)',   // 4★ teal
+          'rgba(46,  125, 50,  0.90)',   // 5★ green
+        ],
+        borderRadius: 8,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.parsed.y} response${ctx.parsed.y !== 1 ? 's' : ''}`
+          }
+        }
+      },
+      scales: {
+        x: { grid: { display: false } },
+        y: {
+          beginAtZero: true,
+          grid: { color: 'rgba(0,0,0,0.05)' },
+          ticks: { precision: 0 }
+        }
+      }
+    }
+  });
+ 
+  //  Category Donut Chart 
+  const catOrder  = ['accuracy', 'speed', 'ui', 'treatment', 'language', 'other'];
+  const catLabels = catOrder.map(k => CAT_LABELS[k] || k);
+  const catValues = catOrder.map(
+    k => feedbackData.filter(f => f.category === k).length
+  );
+  const catColors = [
+    'rgba(46,  125, 50,  0.85)',   // accuracy  — green
+    'rgba(21,  101, 192, 0.80)',   // speed     — blue
+    'rgba(106, 27,  154, 0.80)',   // ui        — purple
+    'rgba(245, 127, 23,  0.85)',   // treatment — amber
+    'rgba(21,  101, 192, 0.50)',   // language  — light blue
+    'rgba(120, 120, 120, 0.55)',   // other     — gray
+  ];
+ 
+  const catCtx = document.getElementById('fbCatChart').getContext('2d');
+ 
+  if (fbCatChartInstance) fbCatChartInstance.destroy();
+ 
+  fbCatChartInstance = new Chart(catCtx, {
+    type: 'doughnut',
+    data: {
+      labels: catLabels,
+      datasets: [{
+        data: catValues,
+        backgroundColor: catColors,
+        borderColor: '#fff',
+        borderWidth: 2,
+        hoverOffset: 8,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: {
+        legend: {
+          position: 'right',
+          labels: {
+            boxWidth: 11,
+            padding: 14,
+            font: { size: 12, family: "'Nunito', sans-serif", weight: '700' },
+            color: '#4a6350',
+          }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.label}: ${ctx.parsed} response${ctx.parsed !== 1 ? 's' : ''}`
+          }
+        }
+      }
+    }
+  });
 }
 
 function applyFilters() {
@@ -646,7 +848,14 @@ function renderFeedbackList(items) {
           <i data-lucide="clock" style="width:12px;height:12px"></i>
           ${fmtDateTime(f.created_at)}
         </div>
-        <div class="ad-card-id">#${f.id}</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <div class="ad-card-id">#${f.id}</div>
+          <button class="ad-view-btn ad-btn--danger"
+            onclick="deleteFeedback(${f.id})">
+            <i data-lucide="trash-2" style="width:12px;height:12px"></i>
+            Delete
+          </button>
+        </div>
       </div>
     </div>`;
   }).join('');

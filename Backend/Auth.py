@@ -10,7 +10,7 @@ import jwt
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from Config import (
+from config import (
     ACCESS_TOKEN_EXPIRE,
     ALGORITHM,
     GMAIL_PASS,
@@ -18,8 +18,8 @@ from Config import (
     RECAPTCHA_SECRET,
     SECRET_KEY,
 )
-from Database import get_db
-from Schemas import (
+from database import get_db
+from schemas import (
     ForgotPasswordRequest,
     LoginRequest,
     ResetPasswordRequest,
@@ -166,7 +166,6 @@ def signup(body: SignupRequest):
 
     if len(username) < 2:
         raise HTTPException(status_code=400, detail="Username must be at least 2 characters")
-    # Password strength is validated by SignupRequest schema (Schemas.py)
     conn = get_db()
     cur  = conn.cursor()
     try:

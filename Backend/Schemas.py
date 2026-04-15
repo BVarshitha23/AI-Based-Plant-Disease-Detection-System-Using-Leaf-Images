@@ -39,7 +39,6 @@ class FeedbackRequest(BaseModel):
     rating:    int
     category:  str
     message:   str  = ""
-    is_farmer: bool = False
 
 
 class AIAdviceRequest(BaseModel):

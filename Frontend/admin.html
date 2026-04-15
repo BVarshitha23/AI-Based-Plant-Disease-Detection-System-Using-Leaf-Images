@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="CSS/admin.css" />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap" rel="stylesheet"/>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   </head>
   <body>
 
@@ -183,6 +184,7 @@
                   <th>Role</th>
                   <th>View Prediction</th>
                   <th>Role Actions</th>
+                  <th>Delete</th>
                 </tr>
               </thead>
               <tbody id="usersBody"></tbody>
@@ -264,6 +266,7 @@
                 <th>Severity %</th>
                 <th>Stage</th>
                 <th>Date</th>
+                <th>Delete</th>
               </tr>
             </thead>
             <tbody id="detectionsBody"></tbody>
@@ -273,87 +276,106 @@
         <div id="detectPagination" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:16px;flex-wrap:wrap"></div>
       </section>
 
-      <!-- ════ FEEDBACK ════ -->
-      <section class="ad-tab" id="tab-feedback">
-        <div class="ad-section-head">
-          <h1 class="ad-section-title">Feedback Inbox</h1>
-          <p class="ad-section-sub">All user submissions — newest first</p>
-        </div>
+<!-- ════ FEEDBACK ════ -->
+<section class="ad-tab" id="tab-feedback">
+  <div class="ad-section-head">
+    <h1 class="ad-section-title">Feedback Inbox</h1>
+    <p class="ad-section-sub">All user submissions — newest first</p>
+  </div>
+ 
+  <div class="ad-stats">
+    <div class="ad-stat-card">
+      <div class="ad-stat-icon ad-stat-icon--blue">
+        <i data-lucide="message-square" style="width:18px;height:18px"></i>
+      </div>
+      <div>
+        <div class="ad-stat-value" id="statTotal">—</div>
+        <div class="ad-stat-label">Total Responses</div>
+      </div>
+    </div>
+    <div class="ad-stat-card">
+      <div class="ad-stat-icon ad-stat-icon--green">
+        <i data-lucide="star" style="width:18px;height:18px"></i>
+      </div>
+      <div>
+        <div class="ad-stat-value" id="statAvgRating">—</div>
+        <div class="ad-stat-label">Avg Rating</div>
+      </div>
+    </div>
+    <div class="ad-stat-card">
+      <div class="ad-stat-icon ad-stat-icon--amber">
+        <i data-lucide="sprout" style="width:18px;height:18px"></i>
+      </div>
+      <div>
+        <div class="ad-stat-value" id="statSatisfaction">—</div>
+        <div class="ad-stat-label">Satisfaction Score</div>
+      </div>
+    </div>
+    <div class="ad-stat-card">
+      <div class="ad-stat-icon ad-stat-icon--purple">
+        <i data-lucide="trending-up" style="width:18px;height:18px"></i>
+      </div>
+      <div>
+        <div class="ad-stat-value" id="statTopCat">—</div>
+        <div class="ad-stat-label">Top Category</div>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="fb-chart-row">
+    <div class="fb-chart-card">
+      <div class="fb-chart-title">
+        <i data-lucide="bar-chart-2" style="width:15px;height:15px;color:var(--leaf)"></i>
+        Rating Distribution
+      </div>
+      <p class="fb-chart-sub">How users rated the app (1 – 5 stars)</p>
+      <canvas id="fbRatingChart"></canvas>
+    </div>
+    <div class="fb-chart-card">
+      <div class="fb-chart-title">
+        <i data-lucide="pie-chart" style="width:15px;height:15px;color:var(--leaf)"></i>
+        Feedback by Category
+      </div>
+      <p class="fb-chart-sub">What users care most about</p>
+      <canvas id="fbCatChart"></canvas>
+    </div>
+  </div>
 
-        <div class="ad-stats">
-          <div class="ad-stat-card">
-            <div class="ad-stat-icon ad-stat-icon--blue">
-              <i data-lucide="message-square" style="width:18px;height:18px"></i>
-            </div>
-            <div>
-              <div class="ad-stat-value" id="statTotal">—</div>
-              <div class="ad-stat-label">Total Responses</div>
-            </div>
-          </div>
-          <div class="ad-stat-card">
-            <div class="ad-stat-icon ad-stat-icon--green">
-              <i data-lucide="star" style="width:18px;height:18px"></i>
-            </div>
-            <div>
-              <div class="ad-stat-value" id="statAvgRating">—</div>
-              <div class="ad-stat-label">Avg Rating</div>
-            </div>
-          </div>
-          <div class="ad-stat-card">
-            <div class="ad-stat-icon ad-stat-icon--amber">
-              <i data-lucide="sprout" style="width:18px;height:18px"></i>
-            </div>
-            <div>
-              <div class="ad-stat-value" id="statSatisfaction">—</div>
-              <div class="ad-stat-label">Satisfaction Score</div>
-            </div>
-          </div>
-          <div class="ad-stat-card">
-            <div class="ad-stat-icon ad-stat-icon--purple">
-              <i data-lucide="trending-up" style="width:18px;height:18px"></i>
-            </div>
-            <div>
-              <div class="ad-stat-value" id="statTopCat">—</div>
-              <div class="ad-stat-label">Top Category</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="ad-filters">
-          <div class="ad-search-wrap">
-            <i data-lucide="search" style="width:15px;height:15px" class="ad-search-icon"></i>
-            <input class="ad-search" type="text" id="searchInput" placeholder="Search feedback…" oninput="applyFilters(); toggleFeedbackClear()" />
-            <button class="ad-search-clear" id="feedbackClearBtn" onclick="clearFeedbackSearch()" style="display:none">
-              <i data-lucide="x" style="width:13px;height:13px"></i>
-            </button>
-          </div>
-          <select class="ad-select" id="filterRating" onchange="applyFilters()">
-            <option value="">All Ratings</option>
-            <option value="5">Excellent (5 ★)</option>
-            <option value="4">Good (4 ★)</option>
-            <option value="3">Okay (3 ★)</option>
-            <option value="2">Bad (2 ★)</option>
-            <option value="1">Terrible (1 ★)</option>
-          </select>
-          <select class="ad-select" id="filterCategory" onchange="applyFilters()">
-            <option value="">All Categories</option>
-            <option value="accuracy">Disease Accuracy</option>
-            <option value="speed">Speed</option>
-            <option value="language">Language Support</option>
-            <option value="ui">App Design</option>
-            <option value="treatment">Treatment Advice</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-
-        <div class="ad-results-bar"><span id="resultsCount">Loading…</span></div>
-        <div id="feedbackList" class="ad-list"></div>
-        <div class="ad-empty" id="emptyState" style="display:none">
-          <i data-lucide="inbox" style="width:48px;height:48px;color:#c8e6c9"></i>
-          <h3>No feedback found</h3>
-          <p>Try adjusting your filters or check back later.</p>
-        </div>
-      </section>
+  <div class="ad-filters">
+    <div class="ad-search-wrap">
+      <i data-lucide="search" style="width:15px;height:15px" class="ad-search-icon"></i>
+      <input class="ad-search" type="text" id="searchInput" placeholder="Search feedback…" oninput="applyFilters(); toggleFeedbackClear()" />
+      <button class="ad-search-clear" id="feedbackClearBtn" onclick="clearFeedbackSearch()" style="display:none">
+        <i data-lucide="x" style="width:13px;height:13px"></i>
+      </button>
+    </div>
+    <select class="ad-select" id="filterRating" onchange="applyFilters()">
+      <option value="">All Ratings</option>
+      <option value="5">Excellent (5 ★)</option>
+      <option value="4">Good (4 ★)</option>
+      <option value="3">Okay (3 ★)</option>
+      <option value="2">Bad (2 ★)</option>
+      <option value="1">Terrible (1 ★)</option>
+    </select>
+    <select class="ad-select" id="filterCategory" onchange="applyFilters()">
+      <option value="">All Categories</option>
+      <option value="accuracy">Disease Accuracy</option>
+      <option value="speed">Speed</option>
+      <option value="language">Language Support</option>
+      <option value="ui">App Design</option>
+      <option value="treatment">Treatment Advice</option>
+      <option value="other">Other</option>
+    </select>
+  </div>
+ 
+  <div class="ad-results-bar"><span id="resultsCount">Loading…</span></div>
+  <div id="feedbackList" class="ad-list"></div>
+  <div class="ad-empty" id="emptyState" style="display:none">
+    <i data-lucide="inbox" style="width:48px;height:48px;color:#c8e6c9"></i>
+    <h3>No feedback found</h3>
+    <p>Try adjusting your filters or check back later.</p>
+  </div>
+</section>
 
     </div>
 

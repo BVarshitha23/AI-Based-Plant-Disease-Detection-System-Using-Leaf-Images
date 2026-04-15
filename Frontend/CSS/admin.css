@@ -716,6 +716,8 @@ body {
   color: var(--text); margin-bottom: 2px;
 }
 
+
+
 /* ── EMPTY / LOADING ── */
 .ad-empty {
   display: flex; flex-direction: column;
@@ -724,6 +726,53 @@ body {
 }
 .ad-empty h3 { font-size: 17px; font-weight: 800; color: var(--text-mid); }
 .ad-empty p  { font-size: 13px; color: var(--text-soft); font-weight: 600; }
+
+/* Two-column chart row */
+.fb-chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0 24px;
+}
+
+/* Individual chart card */
+.fb-chart-card {
+  background: var(--white);
+  border: 1.5px solid var(--border-soft);
+  border-radius: 18px;
+  padding: 18px 20px 16px;
+  box-shadow: 0 2px 8px rgba(46, 125, 50, 0.05);
+}
+
+/* Chart card header */
+.fb-chart-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 3px;
+}
+
+/* Chart card subtitle */
+.fb-chart-sub {
+  font-size: 11px;
+  color: var(--text-soft);
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+
+/* Canvas size */
+#fbRatingChart { height: 200px !important; }
+#fbCatChart    { height: 200px !important; }
+
+/* Responsive: stack on smaller screens */
+@media (max-width: 700px) {
+  .fb-chart-row {
+    grid-template-columns: 1fr;
+  }
+}
 
 /* ── RESPONSIVE ── */
 @media (max-width: 1100px) {

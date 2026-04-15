@@ -18,8 +18,8 @@ from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import img_to_array
 
-from Auth import get_current_user, router as auth_router, verify_admin
-from Config import (
+from auth import get_current_user, router as auth_router, verify_admin
+from config import (
     FRONTEND_DIR,
     IMG_SIZE,
     JSON_PATH,
@@ -27,8 +27,9 @@ from Config import (
     TTA_STEPS,
     groq_client,
 )
-from Database import get_db, init_db
-from Schemas import AIAdviceRequest, FeedbackRequest, TranslateRequest
+from database import get_db, init_db
+from schemas import AIAdviceRequest, FeedbackRequest, TranslateRequest
+
 
 # LOAD MODEL & CLASS LABELS
 print("\n  Loading model...")
@@ -408,7 +409,6 @@ def submit_feedback(
                 body.rating,
                 body.category.strip(),
                 body.message.strip()[:500],
-                body.is_farmer,
             ),
         )
         conn.commit()
@@ -566,6 +566,87 @@ def toggle_admin(
         "user_id":  user_id,
         "is_admin": new_status,
     }
+
+@app.delete("/admin/users/{user_id}")
+def admin_delete_user(
+    user_id: int,
+    _admin:  dict = Depends(verify_admin),
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("SELECT id FROM users WHERE id = %s", (user_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="User not found")
+
+        # delete child rows first (skip if you have ON DELETE CASCADE FKs)
+        cur.execute("DELETE FROM predictions WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM feedback    WHERE user_id = %s", (user_id,))
+        cur.execute("DELETE FROM users       WHERE id      = %s", (user_id,))
+        conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "User deleted successfully"}
+
+
+@app.delete("/admin/detections/{detection_id}")
+def admin_delete_detection(
+    detection_id: int,
+    _admin:       dict = Depends(verify_admin),
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("SELECT id FROM predictions WHERE id = %s", (detection_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Detection not found")
+
+        cur.execute("DELETE FROM predictions WHERE id = %s", (detection_id,))
+        conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Detection deleted successfully"}
+
+
+@app.delete("/admin/feedback/{feedback_id}")
+def admin_delete_feedback(
+    feedback_id: int,
+    _admin:      dict = Depends(verify_admin),
+):
+    conn = get_db()
+    cur  = conn.cursor()
+    try:
+        cur.execute("SELECT id FROM feedback WHERE id = %s", (feedback_id,))
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Feedback not found")
+
+        cur.execute("DELETE FROM feedback WHERE id = %s", (feedback_id,))
+        conn.commit()
+    except HTTPException:
+        raise
+    except Exception as e:
+        conn.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        cur.close()
+        conn.close()
+
+    return {"message": "Feedback deleted successfully"}
+
 
 
 #  STATIC FILE FALLBACK

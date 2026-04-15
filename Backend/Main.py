@@ -401,8 +401,8 @@ def submit_feedback(
     try:
         cur.execute(
             """
-            INSERT INTO feedback (user_id, rating, category, message, is_farmer)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO feedback (user_id, rating, category, message)
+            VALUES (%s, %s, %s, %s)
             """,
             (
                 current_user["id"],
@@ -435,7 +435,7 @@ def get_all_feedback(
         cur.execute(
             """
             SELECT f.id, f.rating, f.category, f.message,
-                   f.is_farmer, f.created_at, u.username
+                    f.created_at, u.username
             FROM feedback f
             LEFT JOIN users u ON f.user_id = u.id
             ORDER BY f.created_at DESC

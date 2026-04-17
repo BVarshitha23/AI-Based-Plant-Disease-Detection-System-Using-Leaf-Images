@@ -153,3 +153,27 @@ document.getElementById("loginForm").addEventListener("reset", () => {
   document.getElementById("usernameError").classList.remove("show");
   document.getElementById("pwError").classList.remove("show");
 });
+
+// SMART BUTTON ENABLE/DISABLE 
+
+const loginBtn   = document.getElementById('loginBtn');
+const emailInput = document.getElementById('username');
+const pwInput    = document.getElementById('password');
+
+function checkFormReady() {
+  const emailOk   = emailInput.value.trim().length > 0;
+  const pwOk      = pwInput.value.length > 0;
+  const captchaOk = grecaptcha.getResponse().length > 0;
+
+  loginBtn.disabled = !(emailOk && pwOk && captchaOk);
+}
+
+// Listen to typing
+emailInput.addEventListener('input', checkFormReady);
+pwInput.addEventListener('input', checkFormReady);
+
+// reCAPTCHA doesn't fire DOM events, so we poll it every 500ms
+setInterval(checkFormReady, 500);
+
+// Run once on load so button starts disabled
+checkFormReady();

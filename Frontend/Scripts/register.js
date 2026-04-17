@@ -102,3 +102,29 @@ async function handleRegister(e) {
     lucide.createIcons();
   }
 }
+
+// SMART BUTTON ENABLE/DISABLE 
+
+const registerBtn = document.getElementById('registerBtn');
+const nameInput   = document.getElementById('name');
+const emailInput  = document.getElementById('email');
+const pwInput     = document.getElementById('password');
+const confirmInput= document.getElementById('confirm');
+
+function checkFormReady() {
+  const nameOk    = nameInput.value.trim().length > 0;
+  const emailOk   = emailInput.value.trim().length > 0;
+  const pwOk      = pwInput.value.length > 0;
+  const confirmOk = confirmInput.value.length > 0;
+
+  registerBtn.disabled = !(nameOk && emailOk && pwOk && confirmOk);
+}
+
+// Listen to typing
+nameInput.addEventListener('input', checkFormReady);
+emailInput.addEventListener('input', checkFormReady);
+pwInput.addEventListener('input', checkFormReady);
+confirmInput.addEventListener('input', checkFormReady);
+
+// Run once on load so button starts disabled
+checkFormReady();

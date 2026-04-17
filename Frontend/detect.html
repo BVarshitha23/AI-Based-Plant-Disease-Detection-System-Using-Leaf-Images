@@ -11,6 +11,8 @@
       rel="stylesheet"
     />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   </head>
   <body>
     <nav class="navbar">
@@ -204,9 +206,31 @@
           <i data-lucide="refresh-cw" style="width: 15px; height: 15px"></i>
           Scan Another Leaf
         </button>
+        <button class="scan-again-btn dl-report-btn" id="dlReportBtn" onclick="showReportModal()">
+          <i data-lucide="file-text" style="width:15px;height:15px"></i>
+          Download Report
+        </button>
       </div>
     </section>
-
+    
+<!-- REPORT MODAL -->
+<div class="report-overlay" id="reportOverlay">
+  <div class="report-modal">
+    <div class="report-actions">
+      <span class="report-actions-title">Scan Report Preview</span>
+      <div class="report-action-btns">
+        <button class="rep-btn pdf-btn" onclick="downloadReportPDF()">
+          <i data-lucide="file-text" style="width:15px;height:15px"></i> Download PDF
+        </button>
+        <button class="rep-btn" onclick="downloadReportPNG()">
+          <i data-lucide="image" style="width:15px;height:15px"></i> Save as Image
+        </button>
+        <button class="rep-close-btn" onclick="closeReportModal()">Close</button>
+      </div>
+    </div>
+    <div id="reportPrintArea"></div>
+  </div>
+</div>
     <!-- FOOTER -->
     <footer class="site-footer">
       <div class="logo">

@@ -73,3 +73,15 @@ class TranslateRequest(BaseModel):
 class ChangePasswordRequest(BaseModel):
     current_password: str
     new_password:     str
+
+class WeatherAdviceRequest(BaseModel):
+    predicted_class:   str
+    confidence:        float
+    severity_pct:      float
+    stage:             str
+    urgency:           str
+    latitude:          float
+    longitude:         float
+    soil_type:         str = "Unknown"
+    sowing_date:       str = ""         
+    irrigation_method: str = "Unknown"   

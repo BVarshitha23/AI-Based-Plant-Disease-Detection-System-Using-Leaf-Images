@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Network Guard — LeafSense</title>
+    <link rel="stylesheet" href="CSS/network.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+    <!-- OFFLINE OVERLAY -->
+    <div id="ls-network-overlay">
+      <div class="ls-net-card">
+
+        <!-- WiFi-off icon -->
+        <div class="ls-net-icon-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <line x1="1"  y1="1"  x2="23" y2="23"/>
+            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+            <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+            <path d="M10.71 5.05A16 16 0 0 1 22.56 9"/>
+            <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+            <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+            <line x1="12" y1="20" x2="12.01" y2="20"/>
+          </svg>
+        </div>
+
+        <!-- Status badge -->
+        <div class="ls-net-badge">
+          <span class="ls-net-badge-dot"></span>
+          No Internet
+        </div>
+
+        <!-- Title -->
+        <h2 class="ls-net-title">You're Offline</h2>
+
+        <!-- Message -->
+        <p class="ls-net-msg">
+          LeafSense needs an internet connection to detect plant diseases
+          and fetch AI advice. Please check your Wi-Fi or mobile data
+          and try again.
+        </p>
+
+        <!-- Retry button -->
+        <button class="ls-net-retry-btn" id="ls-net-retry-btn"
+                onclick="window.__lsNetCheck()">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"
+               stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          Try Again
+        </button>
+
+        <p class="ls-net-auto">Checking automatically every 8 seconds…</p>
+
+      </div>
+    </div>
+
+    <!-- RECONNECTED TOAST -->
+    <div id="ls-net-toast">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+        <polyline points="22 4 12 14.01 9 11.01"/>
+      </svg>
+      Back online — you're good to go!
+    </div>
+    <script src="Scripts/network.js"></script>
+  </body>
+</html>

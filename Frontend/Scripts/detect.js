@@ -7,7 +7,32 @@ const API_URL = '/predict';
 let selectedFile  = null;
 let currentResult = null;
 let currentLang   = 'en';
+let userLatitude  = null;
+let userLongitude = null;
 
+// GET USER LOCATION ON PAGE LOAD 
+function initLocation() {
+  const statusEl = document.getElementById('locationStatus');
+  const textEl   = document.getElementById('locationText');
+  if (!navigator.geolocation) {
+    if (statusEl) { statusEl.className = 'location-status err'; textEl.innerHTML = '<i data-lucide="map-pin" style="width:14px;height:14px;color:#888;vertical-align:middle;flex-shrink:0;"></i> Location not supported in this browser'; }
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      userLatitude  = pos.coords.latitude;
+      userLongitude = pos.coords.longitude;
+      if (statusEl) {
+        statusEl.className   = 'location-status ok';
+        textEl.innerHTML   = `<i data-lucide="map-pin" style="width:14px;height:14px;color:#2e7d32;vertical-align:middle;flex-shrink:0;"></i> Location captured — weather &amp; soil analysis enabled`;
+      }
+    },
+    () => {
+      if (statusEl) { statusEl.className = 'location-status err'; textEl.innerHTML = '<i data-lucide="alert-triangle" style="width:14px;height:14px;color:#e65100;vertical-align:middle;flex-shrink:0;"></i> Location denied — weather advice will be skipped'; }
+    },
+    { timeout: 8000 }
+  );
+}
 const LANG_NAMES = {
   en: 'English', hi: 'Hindi', te: 'Telugu', ta: 'Tamil', kn: 'Kannada'
 };
@@ -58,6 +83,12 @@ async function fetchTranslation(predictedClass, pct, stage, lang) {
 
 // IMAGE UPLOAD HANDLERS 
 document.addEventListener('DOMContentLoaded', function () {
+  initLocation();
+
+  // Set max date on sowing input to today
+  const sowingInput = document.getElementById('sowingDateInput');
+  if (sowingInput) sowingInput.max = new Date().toISOString().split('T')[0];
+
   const fileInput = document.getElementById('fileInput');
   if (fileInput) {
     fileInput.addEventListener('change', function () {
@@ -103,7 +134,7 @@ const STEPS = [
   'Checking image quality...',
   'Running disease detection...',
   'Calculating severity...',
-  'Fetching treatment advice...',
+  'Fetching weather & soil context...',
   'Preparing your result...'
 ];
 
@@ -114,8 +145,8 @@ async function startScan() {
   document.getElementById('analyzingBox').classList.add('show');
   document.getElementById('resultSection').classList.remove('show');
 
-  const geminiCard = document.getElementById('geminiCard');
-  if (geminiCard) geminiCard.innerHTML = '';
+  const analysisCard = document.getElementById('analysisCard');
+  if (analysisCard) analysisCard.innerHTML = '';
 
   let si = 0;
   const stepEl = document.getElementById('anaStep');
@@ -160,7 +191,7 @@ async function startScan() {
     setTimeout(() => {
       document.getElementById('analyzingBox').classList.remove('show');
       renderResult(currentResult);
-      fetchGeminiAdvice({ predicted_class, confidence, severity_pct: pct, stage, urgency });
+      fetchUnifiedAnalysis({ predicted_class, confidence, severity_pct: pct, stage, urgency });
     }, 400);
 
   } catch (error) {
@@ -254,104 +285,208 @@ function renderSeverity(pct, stage, isHealthy) {
   });
 }
 
-//  GEMINI / AI ADVICE 
-async function fetchGeminiAdvice({ predicted_class, confidence, severity_pct, stage, urgency }) {
-  const card = document.getElementById('geminiCard');
+// SAFE STRING HELPER — prevents [object Object] if LLM returns wrong type
+function safeStr(val) {
+  if (!val) return '';
+  if (typeof val === 'string') return val;
+  if (Array.isArray(val)) return val.join(' ');
+  if (typeof val === 'object') {
+    return val.text || val.description || val.content || val.impact
+           || val.note || val.detail || JSON.stringify(val);
+  }
+  return String(val);
+}
+
+// ============================================================
+//  UNIFIED ANALYSIS — plant health + weather + soil combined
+// ============================================================
+async function fetchUnifiedAnalysis({ predicted_class, confidence, severity_pct, stage, urgency }) {
+  const card = document.getElementById('analysisCard');
   if (!card) return;
 
+  const hasLocation = !!(userLatitude && userLongitude);
+
   card.innerHTML = `
-    <div class="gemini-card">
-      <div class="gemini-header">
-        <div class="gemini-logo"></div>
-        <span class="gemini-header-text">AI Analysis</span>
+    <div class="analysis-card">
+      <div class="analysis-header">
+        <div class="analysis-dot"></div>
+        <span class="analysis-header-text">Overall Analysis</span>
+        <span class="analysis-badge">${hasLocation ? '<span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="cloud-sun" style="width:12px;height:12px;color:#2e7d32;vertical-align:middle;flex-shrink:0;"></i> Weather + Soil + AI</span>' : '<span style="display:inline-flex;align-items:center;gap:4px;"><i data-lucide="brain-circuit" style="width:12px;height:12px;color:#1565c0;vertical-align:middle;flex-shrink:0;"></i> AI Analysis</span>'}</span>
       </div>
-      <div class="gemini-loading">
-        <div class="gemini-spinner"></div>
-        Getting AI-powered advice for your crop...
+      <div class="analysis-loading">
+        <div class="analysis-spinner"></div>
+        ${hasLocation ? 'Combining plant health, live weather & soil data...' : 'Getting AI-powered advice...'}
       </div>
     </div>`;
 
   try {
-    const res = await fetch('/gemini-advice', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json', ...Session.authHeaders() },
-      body: JSON.stringify({ predicted_class, confidence, severity_pct, stage, urgency }),
-    });
+    let advice, context;
 
-    if (!res.ok) throw new Error(`Gemini endpoint error ${res.status}`);
-    const data = await res.json();
-
-    if (data.success && data.advice) {
-      renderGeminiAdvice(card, data.advice);
+    if (hasLocation) {
+      // Full analysis: weather + soil + AI all in one call
+      const res = await fetch('/weather-advice', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', ...Session.authHeaders() },
+        body: JSON.stringify({
+          predicted_class, confidence, severity_pct, stage, urgency,
+          latitude:          userLatitude,
+          longitude:         userLongitude,
+          soil_type:         'Unknown',
+          irrigation_method: 'Unknown',
+          sowing_date:       '',
+        }),
+      });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const data = await res.json();
+      if (!data.advice) throw new Error('No advice returned');
+      advice  = data.advice;
+      context = data.context || null;
+      if (currentResult) currentResult.weatherData = { advice, context };
     } else {
-      card.innerHTML = `
-        <div class="gemini-card">
-          <div class="gemini-header">
-            <div class="gemini-logo"></div>
-            <span class="gemini-header-text">AI Analysis</span>
-          </div>
-          <div class="gemini-body">
-            <div class="gemini-summary">${data.advice?.summary || 'AI advice unavailable.'}</div>
-          </div>
-        </div>`;
+      // Fallback: basic AI-only call (no location)
+      const res = await fetch('/groq-advice', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json', ...Session.authHeaders() },
+        body: JSON.stringify({ predicted_class, confidence, severity_pct, stage, urgency }),
+      });
+      if (!res.ok) throw new Error(`Status ${res.status}`);
+      const data = await res.json();
+      if (!data.advice) throw new Error('No advice returned');
+      advice  = data.advice;
+      context = null;
     }
+
+    renderUnifiedAnalysis(card, advice, context);
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+
   } catch (err) {
-    console.warn('AI advice fetch failed:', err);
+    console.error('Unified analysis failed:', err?.message || err);
     card.innerHTML = `
-      <div class="gemini-card">
-        <div class="gemini-header">
-          <div class="gemini-logo"></div>
-          <span class="gemini-header-text">AI Analysis</span>
+      <div class="analysis-card">
+        <div class="analysis-header">
+          <div class="analysis-dot"></div>
+          <span class="analysis-header-text">Overall Analysis</span>
         </div>
-        <div class="gemini-error">⚠ AI advice unavailable right now. Your ML diagnosis above is still accurate.</div>
+        <div class="analysis-error"><i data-lucide="alert-triangle" style="width:14px;height:14px;color:#c62828;vertical-align:middle;flex-shrink:0;"></i> Analysis unavailable right now. Your ML diagnosis above is still accurate.</div>
       </div>`;
   }
 }
 
-function renderGeminiAdvice(card, advice) {
+function renderUnifiedAnalysis(card, advice, ctx) {
+  const isHealthy = !ctx
+    ? (advice.risk_level === 'None')
+    : currentResult?.predicted_class?.toLowerCase().includes('healthy');
+
+  // Context data (only if location was available)
+  const w        = ctx?.weather   || {};
+  const l        = ctx?.location  || {};
+  const soil     = ctx?.soil      || {};
+  const sowing   = ctx?.sowing    || {};
+
+  const locStr  = l.city && l.state ? `${l.city}, ${l.state}` : '';
+  const tempStr = w.temperature_c !== 'N/A' ? `${w.temperature_c}°C` : '';
+  const humStr  = w.humidity_pct  !== 'N/A' ? `${w.humidity_pct}%`  : '';
+  const rainStr = w.rain_forecast || '';
+  const phStr   = soil.ph && soil.ph !== 'N/A' ? `pH ${soil.ph}` : '';
+  const daysStr = sowing.days_since_sowing && sowing.days_since_sowing !== 'Unknown'
+                  ? `Day ${sowing.days_since_sowing}` : '';
+
+  // AI-generated fields
+  const summary      = safeStr(advice.summary);
+  const whatIsThis   = safeStr(advice.what_is_this);
+  const cropStage    = safeStr(advice.crop_stage);
+  const seasonAssess = safeStr(advice.season_assessment);
+  const weatherImp   = safeStr(advice.weather_impact);
+  const soilImp      = safeStr(advice.soil_impact || advice.soil_insight);
+  const farmerTip    = safeStr(advice.farmer_tip);
+  const riskLevel    = safeStr(advice.risk_level);
+
   const actions = (advice.immediate_actions || [])
     .map((a, i) => `
-      <div class="gemini-action-item">
-        <span class="gemini-action-num">${i + 1}</span>
-        <span>${a}</span>
+      <div class="analysis-action-item">
+        <span class="analysis-action-num">${i + 1}</span>
+        <span>${safeStr(a)}</span>
       </div>`).join('');
 
   const tips = (advice.prevention_tips || [])
     .map(t => `
-      <div class="gemini-tip-item">
-        <div class="gemini-tip-dot"></div>
-        <span>${t}</span>
+      <div class="analysis-tip-item">
+        <div class="analysis-tip-dot"></div>
+        <span>${safeStr(t)}</span>
       </div>`).join('');
 
+  // Context pills row (only shown when location available)
+  const pillsHtml = ctx ? `
+    <div class="analysis-pills">
+      ${tempStr && humStr ? `<div class="apill green"><i data-lucide="thermometer" style="width:12px;height:12px;color:#2e7d32;vertical-align:middle;flex-shrink:0;"></i> ${tempStr} · ${humStr} Humidity</div>` : ''}
+      ${rainStr           ? `<div class="apill blue"><i data-lucide="cloud-rain" style="width:12px;height:12px;color:#1565c0;vertical-align:middle;flex-shrink:0;"></i> ${rainStr}</div>` : ''}
+      ${phStr             ? `<div class="apill orange"><i data-lucide="flask-conical" style="width:12px;height:12px;color:#e65100;vertical-align:middle;flex-shrink:0;"></i> ${phStr}</div>` : ''}
+      ${daysStr           ? `<div class="apill teal"><i data-lucide="sprout" style="width:12px;height:12px;color:#00695c;vertical-align:middle;flex-shrink:0;"></i> ${daysStr} in field</div>` : ''}
+    </div>` : '';
+
   card.innerHTML = `
-    <div class="gemini-card">
-      <div class="gemini-header">
-        <div class="gemini-logo"></div>
-        <span class="gemini-header-text">Plant Health Analysis</span>
-        <span class="gemini-header-sub"></span>
+    <div class="analysis-card">
+      <div class="analysis-header">
+        <div class="analysis-dot"></div>
+        <span class="analysis-header-text">Overall Analysis</span>
+        ${locStr ? `<span class="analysis-loc"><i data-lucide="map-pin" style="width:12px;height:12px;color:#888;vertical-align:middle;flex-shrink:0;"></i> ${locStr}</span>` : ''}
+        ${riskLevel && riskLevel !== 'None' ? `<span class="analysis-risk risk-${riskLevel.toLowerCase()}">${riskLevel} Risk</span>` : ''}
       </div>
-      <div class="gemini-body">
-        <div class="gemini-summary">${advice.summary || ''}</div>
-        ${advice.what_is_this ? `
+
+      <div class="analysis-body">
+
+        ${pillsHtml}
+
+        ${summary ? `<div class="analysis-summary">${summary}</div>` : ''}
+
+        ${whatIsThis ? `
         <div>
-          <div class="gemini-section-title">What is this?</div>
-          <div class="gemini-what">${advice.what_is_this}</div>
+          <div class="analysis-section-title">What is this?</div>
+          <div class="analysis-what">${whatIsThis}</div>
         </div>` : ''}
+
+        ${cropStage ? `
+        <div>
+          <div class="analysis-section-title"><i data-lucide="sprout" style="width:12px;height:12px;color:#2e7d32;vertical-align:middle;flex-shrink:0;"></i> Crop Stage</div>
+          <div class="analysis-box green-box">${cropStage}</div>
+        </div>` : ''}
+
+        ${seasonAssess ? `
+        <div>
+          <div class="analysis-section-title"><i data-lucide="calendar" style="width:12px;height:12px;color:#f57c00;vertical-align:middle;flex-shrink:0;"></i> Season Assessment</div>
+          <div class="analysis-box amber-box">${seasonAssess}</div>
+        </div>` : ''}
+
+        ${weatherImp ? `
+        <div>
+          <div class="analysis-section-title"><i data-lucide="cloud-sun" style="width:12px;height:12px;color:#1565c0;vertical-align:middle;flex-shrink:0;"></i> Weather Impact on Disease</div>
+          <div class="analysis-box blue-box">${weatherImp}</div>
+        </div>` : ''}
+
+        ${soilImp ? `
+        <div>
+          <div class="analysis-section-title"><i data-lucide="layers" style="width:12px;height:12px;color:#bf360c;vertical-align:middle;flex-shrink:0;"></i> Soil Impact</div>
+          <div class="analysis-box red-box">${soilImp}</div>
+        </div>` : ''}
+
         ${actions ? `
         <div>
-          <div class="gemini-section-title">Immediate Actions</div>
-          <div class="gemini-actions-grid">${actions}</div>
+          <div class="analysis-section-title">Immediate Actions</div>
+          <div class="analysis-actions">${actions}</div>
         </div>` : ''}
+
         ${tips ? `
         <div>
-          <div class="gemini-section-title">Prevention for Next Season</div>
-          <div class="gemini-tips-list">${tips}</div>
+          <div class="analysis-section-title">Prevention for Next Season</div>
+          <div class="analysis-tips">${tips}</div>
         </div>` : ''}
-        ${advice.farmer_tip ? `
-        <div class="gemini-farmer-tip">
-          <span class="gemini-farmer-emoji">🌾</span>
-          <span>${advice.farmer_tip}</span>
+
+        ${farmerTip ? `
+        <div class="analysis-farmer-tip">
+          <span class="analysis-farmer-icon"><i data-lucide="wheat" style="width:16px;height:16px;color:#e65100;vertical-align:middle;flex-shrink:0;"></i></span>
+          <span>${farmerTip}</span>
         </div>` : ''}
+
       </div>
     </div>`;
 }
@@ -448,8 +583,8 @@ function resetScan() {
   document.getElementById('resultSection').classList.remove('show');
   document.getElementById('unknownBar').classList.remove('show');
 
-  const geminiCard = document.getElementById('geminiCard');
-  if (geminiCard) geminiCard.innerHTML = '';
+  const analysisCard = document.getElementById('analysisCard');
+  if (analysisCard) analysisCard.innerHTML = '';
 
   const playBtn = document.getElementById('playBtn');
   playBtn.innerHTML = '<i data-lucide="volume-2" style="width:16px;height:16px;"></i> Listen Now';
@@ -468,53 +603,51 @@ function buildReportHTML(data, imgSrc) {
   const timeStr = now.toLocaleTimeString('en-IN', { hour:'2-digit', minute:'2-digit' });
   const isHealthy = data.predicted_class.toLowerCase().includes('healthy');
 
-  // Gemini advice from the DOM (already rendered)
-  const geminiBody = document.querySelector('.gemini-body');
+  // Pull AI advice from stored result data (not DOM scraping)
+  const wd = data.weatherData;
+  const adv = wd?.advice || {};
 
-  let summaryHTML = '', whatHTML = '', actionsHTML = '', tipsHTML = '', farmerHTML = '';
+  const summaryText  = safeStr(adv.summary);
+  const whatText     = safeStr(adv.what_is_this);
+  const actionsList  = adv.immediate_actions || [];
+  const tipsList     = adv.prevention_tips   || [];
+  const farmerTipTxt = safeStr(adv.farmer_tip);
 
-  if (geminiBody) {
-    const summaryEl = geminiBody.querySelector('.gemini-summary');
-    if (summaryEl) summaryHTML = `
-      <div class="rpt-ai-box">
-        <div class="rpt-ai-box-title">AI summary</div>
-        ${summaryEl.innerHTML}
-      </div>`;
+  const summaryHTML = summaryText ? `
+    <div class="rpt-ai-box">
+      <div class="rpt-ai-box-title">AI Summary</div>
+      ${summaryText}
+    </div>` : '';
 
-    const whatEl = geminiBody.querySelector('.gemini-what');
-    if (whatEl) whatHTML = `
-      <div class="rpt-ai-box" style="margin-top:10px;">
-        <div class="rpt-ai-box-title">What is this?</div>
-        ${whatEl.innerHTML}
-      </div>`;
+  const whatHTML = whatText ? `
+    <div class="rpt-ai-box" style="margin-top:10px;">
+      <div class="rpt-ai-box-title">What is this?</div>
+      ${whatText}
+    </div>` : '';
 
-    const actionItems = [...geminiBody.querySelectorAll('.gemini-action-item')];
-    if (actionItems.length) actionsHTML = `
-      <div class="rpt-section-title" style="margin-top:14px;">Immediate actions</div>
-      <div class="rpt-action-list">
-        ${actionItems.map((el, i) => `
-          <div class="rpt-action-item">
-            <span class="rpt-action-num">${i + 1}</span>
-            <span>${el.querySelector('span:last-child')?.innerHTML || ''}</span>
-          </div>`).join('')}
-      </div>`;
+  const actionsHTML = actionsList.length ? `
+    <div class="rpt-section-title" style="margin-top:14px;">Immediate Actions</div>
+    <div class="rpt-action-list">
+      ${actionsList.map((a, i) => `
+        <div class="rpt-action-item">
+          <span class="rpt-action-num">${i + 1}</span>
+          <span>${safeStr(a)}</span>
+        </div>`).join('')}
+    </div>` : '';
 
-    const tipItems = [...geminiBody.querySelectorAll('.gemini-tip-item')];
-    if (tipItems.length) tipsHTML = `
-      <div class="rpt-section-title" style="margin-top:14px;">Prevention tips</div>
-      ${tipItems.map(el => `
-        <div class="rpt-tip-item">
-          <div class="rpt-tip-dot"></div>
-          <span>${el.querySelector('span')?.innerHTML || ''}</span>
-        </div>`).join('')}`;
+  const tipsHTML = tipsList.length ? `
+    <div class="rpt-section-title" style="margin-top:14px;">Prevention Tips</div>
+    ${tipsList.map(t => `
+      <div class="rpt-tip-item">
+        <div class="rpt-tip-dot"></div>
+        <span>${safeStr(t)}</span>
+      </div>`).join('')}` : '';
 
-    const farmerEl = geminiBody.querySelector('.gemini-farmer-tip span:last-child');
-    if (farmerEl) farmerHTML = `
-      <div class="rpt-farmer-tip" style="margin-top:10px;">
-        <span style="font-size:1.1rem;flex-shrink:0;">🌾</span>
-        <span>${farmerEl.innerHTML}</span>
-      </div>`;
-  }
+  const farmerHTML = farmerTipTxt ? `
+    <div class="rpt-farmer-tip" style="margin-top:10px;">
+      <span style="flex-shrink:0;"><i data-lucide="wheat" style="width:16px;height:16px;color:#e65100;vertical-align:middle;flex-shrink:0;"></i></span>
+      <span>${farmerTipTxt}</span>
+    </div>` : '';
 
   // Translation line
   const transText = data.translations?.['en'] || '';
@@ -571,6 +704,79 @@ function buildReportHTML(data, imgSrc) {
     <div class="rpt-ai-box" style="margin-bottom:10px;">${transText}</div>` : ''}
 
     ${summaryHTML}${whatHTML}${actionsHTML}${tipsHTML}${farmerHTML}
+
+    ${(function() {
+      const wd = data.weatherData;
+      if (!wd) return '';
+
+      const w        = wd.context?.weather    || {};
+      const l        = wd.context?.location   || {};
+      const soil     = wd.context?.soil       || {};
+      const sowing   = wd.context?.sowing     || {};
+      const soilType = wd.context?.soil_type  || '';
+      const irr      = wd.context?.irrigation || '';
+      const adv      = wd.advice || {};
+
+      // Live data strings
+      const locStr  = l.city && l.state ? `${l.city}, ${l.state}` : '';
+      const tempStr = w.temperature_c !== 'N/A' ? `${w.temperature_c}°C` : '';
+      const humStr  = w.humidity_pct  !== 'N/A' ? `${w.humidity_pct}% humidity` : '';
+      const rainStr = w.rain_forecast || '';
+      const phStr   = soil.ph && soil.ph !== 'N/A' ? `Soil pH ${soil.ph}` : '';
+      const daysStr = sowing.days_since_sowing && sowing.days_since_sowing !== 'Unknown'
+                      ? `Day ${sowing.days_since_sowing} in field` : '';
+
+      // Llama-generated dynamic fields — always run through safeStr
+      const cropStage    = safeStr(adv.crop_stage);
+      const seasonAssess = safeStr(adv.season_assessment);
+      const weatherImp   = safeStr(adv.weather_impact);
+      const soilImp      = safeStr(adv.soil_impact);
+      const farmerTip    = safeStr(adv.farmer_tip);
+
+      const pillStyle = `display:inline-block;border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;margin:3px 4px 3px 0;`;
+      const greenPill  = `${pillStyle}background:#f1f8e9;border:1.5px solid #c5e1a5;color:#2e7d32;`;
+      const bluePill   = `${pillStyle}background:#e3f2fd;border:1.5px solid #90caf9;color:#1565c0;`;
+      const orangePill = `${pillStyle}background:#fff8e1;border:1.5px solid #ffe082;color:#e65100;`;
+      const tealPill   = `${pillStyle}background:#e0f2f1;border:1.5px solid #80cbc4;color:#00695c;`;
+
+      const pills = [
+        tempStr && humStr ? `<span style="${greenPill}"><i data-lucide="thermometer" style="width:11px;height:11px;color:#2e7d32;vertical-align:middle;flex-shrink:0;"></i> ${tempStr} · ${humStr}</span>`   : '',
+        rainStr           ? `<span style="${bluePill}"><i data-lucide="cloud-rain" style="width:11px;height:11px;color:#1565c0;vertical-align:middle;flex-shrink:0;"></i> ${rainStr}</span>`                 : '',
+        soilType && soilType !== 'Unknown' ? `<span style="${orangePill}"><i data-lucide="layers" style="width:11px;height:11px;color:#e65100;vertical-align:middle;flex-shrink:0;"></i> ${soilType}</span>` : '',
+        phStr             ? `<span style="${orangePill}"><i data-lucide="flask-conical" style="width:11px;height:11px;color:#e65100;vertical-align:middle;flex-shrink:0;"></i> ${phStr}</span>`                  : '',
+        irr && irr !== 'Unknown' ? `<span style="${bluePill}"><i data-lucide="droplets" style="width:11px;height:11px;color:#1565c0;vertical-align:middle;flex-shrink:0;"></i> ${irr}</span>`               : '',
+        daysStr           ? `<span style="${tealPill}"><i data-lucide="sprout" style="width:11px;height:11px;color:#00695c;vertical-align:middle;flex-shrink:0;"></i> ${daysStr}</span>`                  : '',
+      ].filter(Boolean).join('');
+
+      const sectionTitle = `font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.06em;color:#aaa;margin-bottom:4px;margin-top:10px;`;
+      const greenBox  = `background:#e8f5e9;border-left:4px solid #2e7d32;border-radius:0 8px 8px 0;padding:9px 12px;font-size:12px;font-weight:600;color:#1b5e20;line-height:1.55;margin-bottom:8px;`;
+      const blueBox   = `background:#e3f2fd;border-left:4px solid #1976d2;border-radius:0 8px 8px 0;padding:9px 12px;font-size:12px;font-weight:600;color:#1a237e;line-height:1.55;margin-bottom:8px;`;
+      const orangeBox = `background:#fbe9e7;border-left:4px solid #e64a19;border-radius:0 8px 8px 0;padding:9px 12px;font-size:12px;font-weight:600;color:#bf360c;line-height:1.55;margin-bottom:8px;`;
+      const yellowBox = `background:#fff8e1;border-left:4px solid #f9a825;border-radius:0 8px 8px 0;padding:9px 12px;font-size:12px;font-weight:600;color:#e65100;line-height:1.55;margin-bottom:8px;`;
+
+      return `
+        <div class="rpt-divider"></div>
+        <div class="rpt-section-title"><i data-lucide="cloud-sun" style="width:11px;height:11px;color:#1565c0;vertical-align:middle;flex-shrink:0;"></i> Weather &amp; Context at Scan Time</div>
+        ${locStr    ? `<div style="font-size:12px;color:#888;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:4px;"><i data-lucide="map-pin" style="width:12px;height:12px;color:#888;vertical-align:middle;flex-shrink:0;"></i> ${locStr}</div>` : ''}
+        ${sowing.sowing_date && sowing.sowing_date !== 'Not provided'
+                    ? `<div style="font-size:12px;color:#888;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:4px;"><i data-lucide="sprout" style="width:12px;height:12px;color:#2e7d32;vertical-align:middle;flex-shrink:0;"></i> Sown on ${sowing.sowing_date}</div>` : ''}
+        <div style="margin-bottom:10px;">${pills}</div>
+
+        ${cropStage    ? `<div style="${sectionTitle}"><i data-lucide="sprout" style="width:11px;height:11px;color:#2e7d32;vertical-align:middle;flex-shrink:0;"></i> Crop Stage (AI-Assessed)</div>
+                          <div style="${greenBox}">${cropStage}</div>` : ''}
+        ${seasonAssess ? `<div style="${sectionTitle}"><i data-lucide="calendar" style="width:11px;height:11px;color:#f57c00;vertical-align:middle;flex-shrink:0;"></i> Season Assessment (AI-Assessed)</div>
+                          <div style="${yellowBox}">${seasonAssess}</div>` : ''}
+        ${weatherImp   ? `<div style="${sectionTitle}"><i data-lucide="cloud-sun" style="width:11px;height:11px;color:#1565c0;vertical-align:middle;flex-shrink:0;"></i> Weather Impact</div>
+                           <div style="${blueBox}">${weatherImp}</div>` : ''}
+        ${soilImp      ? `<div style="${sectionTitle}"><i data-lucide="layers" style="width:11px;height:11px;color:#bf360c;vertical-align:middle;flex-shrink:0;"></i> Soil Impact</div>
+                           <div style="${orangeBox}">${soilImp}</div>` : ''}
+        ${farmerTip    ? `
+          <div style="display:flex;gap:8px;align-items:flex-start;padding:9px 12px;${yellowBox}">
+            <span style="flex-shrink:0;"><i data-lucide="wheat" style="width:15px;height:15px;color:#e65100;vertical-align:middle;flex-shrink:0;"></i></span>
+            <span>${farmerTip}</span>
+          </div>` : ''}
+      `;
+    })()}
 
     <div class="rpt-footer">
       <span class="rpt-footer-note">Generated by LeafSense AI · For guidance only · Not a substitute for expert advice</span>

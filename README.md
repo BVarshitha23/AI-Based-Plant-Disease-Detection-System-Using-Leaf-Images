@@ -97,7 +97,7 @@ LeafSense/
 | Method | Endpoint | Description |
 |---|---|---|
 | `POST` | `/predict` | Upload leaf image → disease + severity JSON |
-| `POST` | `/gemini-advice` | Groq LLM structured agronomist advice |
+| `POST` | `/groq-advice` | Groq LLM structured agronomist advice |
 | `POST` | `/api/translate` | Translate result to regional Indian language |
 | `GET` | `/api/history` | Authenticated user's prediction history |
 | `POST` | `/feedback` | Submit user feedback (rating + message) |

@@ -6,6 +6,7 @@
     <title>Detect — LeafSense</title>
     <link rel="stylesheet" href="CSS/style.css" />
     <link rel="stylesheet" href="CSS/Detect.css" />
+    <link rel="stylesheet" href="CSS/network.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap"
       rel="stylesheet"
@@ -108,6 +109,16 @@
           <img id="previewImg" class="preview-img" alt="Leaf preview" />
         </div>
 
+
+        <!-- Sowing Date + Location -->
+        <div class="soil-row" id="soilRow">
+
+          <!-- Location status -->
+          <div class="location-status" id="locationStatus">
+            <span id="locationText"><i data-lucide="map-pin" style="width:14px;height:14px;color:#888;vertical-align:middle;flex-shrink:0;"></i> Getting your location for weather &amp; soil analysis...</span>
+          </div>
+        </div>
+
         <!-- Scan Button -->
         <div id="scanBtnWrap">
           <button class="scan-btn" id="scanBtn" disabled onclick="startScan()">
@@ -180,7 +191,7 @@
       <div class="sev-stage" id="s3">Critical<br />75%+</div>
     </div>
   </div>
-  <div id="geminiCard"></div>
+  <div id="analysisCard"></div>
   <!-- Language card — spans full width -->
   <div class="res-card lang-card">
     <div class="res-card-title">
@@ -244,7 +255,7 @@
       </div>
       <p>AI-Based Plant Disease Detection · Built for Farmers</p>
     </footer>
-
+    <script src="Scripts/network.js"></script>
     <script src="Scripts/detect.js"></script>
     <script src="Scripts/auth.js"></script>
     <script src="Scripts/navbar.js"></script>

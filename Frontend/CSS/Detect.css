@@ -811,7 +811,7 @@ body {
 }
 
 
-#geminiCard {
+#groqCard {
   margin-top: 18px;
   background-color: var(--white);
   border: 2px solid var(--border);
@@ -819,7 +819,7 @@ body {
   
 }
 
-.gemini-card {
+.groq-card {
   border-radius: 18px;
   overflow: hidden;
   border: 2px solid var(--border);
@@ -833,7 +833,7 @@ body {
 }
 
 /* Header */
-.gemini-header {
+.groq-header {
   display: flex;
   align-items: center;
   gap: 10px;
@@ -842,7 +842,7 @@ body {
   border-bottom: 2px solid var(--border);
 }
 
-.gemini-logo {
+.groq-logo {
   width: 22px;
   height: 22px;
   background: linear-gradient(135deg, var(--leaf), var(--leaf-light));
@@ -850,7 +850,7 @@ body {
   flex-shrink: 0;
 }
 
-.gemini-header-text {
+.groq-header-text {
   font-size: 0.75rem;
   font-weight: 800;
   color: var(--leaf);
@@ -859,7 +859,7 @@ body {
   font-family: 'Nunito', sans-serif;
 }
 
-.gemini-header-sub {
+.groq-header-sub {
   font-size: 0.7rem;
   color: var(--text-soft);
   margin-left: auto;
@@ -868,7 +868,7 @@ body {
 }
 
 /* Body */
-.gemini-body {
+.groq-body {
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -876,7 +876,7 @@ body {
 }
 
 /* Summary box */
-.gemini-summary {
+.groq-summary {
   font-size: 0.95rem;
   line-height: 1.6;
   color: var(--text);
@@ -889,7 +889,7 @@ body {
 }
 
 /* Section titles */
-.gemini-section-title {
+.groq-section-title {
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
@@ -900,7 +900,7 @@ body {
 }
 
 /* What is this */
-.gemini-what {
+.groq-what {
   font-size: 0.88rem;
   line-height: 1.6;
   color: var(--text-mid);
@@ -909,13 +909,13 @@ body {
 }
 
 /* Immediate actions */
-.gemini-actions-grid {
+.groq-actions-grid {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.gemini-action-item {
+.groq-action-item {
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -931,7 +931,7 @@ body {
   font-family: 'Nunito', sans-serif;
 }
 
-.gemini-action-num {
+.groq-action-num {
   font-weight: 800;
   color: var(--leaf);
   font-size: 0.82rem;
@@ -942,13 +942,13 @@ body {
 }
 
 /* Prevention tips */
-.gemini-tips-list {
+.groq-tips-list {
   display: flex;
   flex-direction: column;
   gap: 7px;
 }
 
-.gemini-tip-item {
+.groq-tip-item {
   display: flex;
   align-items: flex-start;
   gap: 10px;
@@ -959,7 +959,7 @@ body {
   font-family: 'Nunito', sans-serif;
 }
 
-.gemini-tip-dot {
+.groq-tip-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
@@ -969,7 +969,7 @@ body {
 }
 
 /* Farmer tip */
-.gemini-farmer-tip {
+.groq-farmer-tip {
   display: flex;
   gap: 10px;
   align-items: flex-start;
@@ -984,13 +984,13 @@ body {
   font-family: 'Nunito', sans-serif;
 }
 
-.gemini-farmer-emoji {
+.groq-farmer-emoji {
   font-size: 1.1rem;
   flex-shrink: 0;
 }
 
 /* Loading state */
-.gemini-loading {
+.groq-loading {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -1001,7 +1001,7 @@ body {
   font-family: 'Nunito', sans-serif;
 }
 
-.gemini-spinner {
+.groq-spinner {
   width: 18px;
   height: 18px;
   border: 2.5px solid var(--leaf-pale);
@@ -1014,7 +1014,7 @@ body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Error state */
-.gemini-error {
+.groq-error {
   padding: 14px 18px;
   font-size: 0.85rem;
   color: var(--red);
@@ -1048,14 +1048,14 @@ body {
  
 @keyframes spin { to { transform: rotate(360deg); } }
  
-.gemini-error {
+.groq-error {
   padding: 14px 18px;
   font-size: 0.85rem;
   color: #ea4335;
   opacity: 0.8;
 }
 
-/* Treatment loading skeleton (shown while Gemini fetches) */
+/* Treatment loading skeleton (shown while Groq fetches) */
 .treat-loading {
   display: flex;
   align-items: center;
@@ -1079,12 +1079,12 @@ body {
   flex-shrink: 0;
 }
 
-/* Gemini card — full width below result-grid */
-#geminiCard {
+/* Groq card — full width below result-grid */
+#groqCard {
   margin-top: 18px;
 }
 
-.gemini-card {
+.groq-card {
   border-radius: 18px;
   overflow: hidden;
   border: 1px solid rgba(66, 133, 244, 0.25);
@@ -1340,4 +1340,440 @@ body {
   .res-card.sev-card .sev-badge      { grid-column: 2; grid-row: 2; align-self: center; }
   .res-card.sev-card .sev-bar-bg     { grid-column: 2; grid-row: 3; align-self: center; margin-bottom: 0; }
   .res-card.sev-card .sev-stages     { grid-column: 1 / -1; margin-top: 14px; }
+}
+/* ── SOIL ROW & LOCATION STATUS ───────────────────────────────────────────── */
+.soil-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 14px 0 0;
+}
+.soil-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-soft, #555);
+  letter-spacing: 0.02em;
+}
+.soil-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #c5e1a5;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: inherit;
+  background: #f9fafb;
+  color: #333;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s;
+}
+.soil-select:focus { border-color: #2e7d32; }
+
+.location-status {
+  font-size: 12px;
+  color: #888;
+  font-style: italic;
+  min-height: 18px;
+}
+.location-status.ok { color: #2e7d32; font-style: normal; font-weight: 600; }
+.location-status.err { color: #c62828; font-style: normal; }
+
+/* ── WEATHER CONTEXT CARD ─────────────────────────────────────────────────── */
+.weather-card {
+  background: var(--card-bg, #fff);
+  border: 1.5px solid #e3f2fd;
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.weather-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  border-bottom: 1.5px solid #f0f0f0;
+}
+.weather-icon { font-size: 22px; }
+.weather-header-text { font-size: 14px; font-weight: 800; color: #1565c0; }
+.weather-header-sub  { font-size: 11px; color: #888; margin-left: auto; }
+
+.weather-context-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.wcp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f1f8e9;
+  border: 1.5px solid #c5e1a5;
+  border-radius: 20px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2e7d32;
+}
+.wcp.blue   { background: #e3f2fd; border-color: #90caf9; color: #1565c0; }
+.wcp.orange { background: #fff8e1; border-color: #ffe082; color: #e65100; }
+.wcp.purple { background: #f3e5f5; border-color: #ce93d8; color: #6a1b9a; }
+.wcp-icon { font-size: 14px; }
+
+.weather-section-title {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+.weather-impact-box {
+  background: #e3f2fd;
+  border-left: 4px solid #1976d2;
+  border-radius: 0 10px 10px 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1a237e;
+  line-height: 1.55;
+}
+.weather-soil-box {
+  background: #fbe9e7;
+  border-left: 4px solid #e64a19;
+  border-radius: 0 10px 10px 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #bf360c;
+  line-height: 1.55;
+}
+.weather-season-box {
+  background: #fff8e1;
+  border-left: 4px solid #f9a825;
+  border-radius: 0 10px 10px 0;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #e65100;
+  line-height: 1.55;
+}
+.weather-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #888;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 20px 0;
+  justify-content: center;
+}
+.weather-spinner {
+  width: 18px; height: 18px;
+  border: 3px solid #e3f2fd;
+  border-top-color: #1976d2;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TWO-COLUMN SOIL/IRRIGATION ROW ─────────────────────────────────────────*/
+.soil-inputs-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.soil-input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+input[type="date"].soil-select {
+  color: #333;
+  cursor: pointer;
+}
+input[type="date"].soil-select::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.6;
+}
+@media (max-width: 600px) {
+  .soil-inputs-row { grid-template-columns: 1fr; }
+}
+
+/* ── WEATHER CARD — crop stage + season pill ─────────────────────────────────*/
+.wcp.teal { background: #e0f2f1; border-color: #80cbc4; color: #00695c; }
+
+/* ══════════════════════════════════════════════════════════
+   UNIFIED ANALYSIS CARD
+══════════════════════════════════════════════════════════ */
+#analysisCard {
+  margin-top: 18px;
+}
+
+.analysis-card {
+  border-radius: 18px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  background: var(--white);
+  animation: fadeSlideUp 0.5s ease both;
+}
+
+/* Header */
+.analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  background: linear-gradient(135deg, var(--leaf-pale) 0%, #e3f2fd 100%);
+  border-bottom: 2px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.analysis-dot {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(135deg, var(--leaf), #1976d2);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.analysis-header-text {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--leaf);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-family: 'Nunito', sans-serif;
+  flex: 1;
+}
+
+.analysis-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: #e8f5e9;
+  border: 1.5px solid #a5d6a7;
+  color: #2e7d32;
+  font-family: 'Nunito', sans-serif;
+}
+
+.analysis-badge.basic {
+  background: #e3f2fd;
+  border-color: #90caf9;
+  color: #1565c0;
+}
+
+.analysis-loc {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-soft);
+  font-family: 'Nunito', sans-serif;
+  margin-left: auto;
+}
+
+/* Risk badge */
+.analysis-risk {
+  font-size: 0.68rem;
+  font-weight: 800;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-family: 'Nunito', sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.analysis-risk.risk-critical { background: #ffebee; border: 1.5px solid #ef9a9a; color: #c62828; }
+.analysis-risk.risk-high     { background: #fff3e0; border: 1.5px solid #ffcc80; color: #e65100; }
+.analysis-risk.risk-medium   { background: #fff8e1; border: 1.5px solid #ffe082; color: #f57c00; }
+.analysis-risk.risk-low      { background: #e8f5e9; border: 1.5px solid #a5d6a7; color: #2e7d32; }
+
+/* Body */
+.analysis-body {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Context pills */
+.analysis-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.apill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 11px;
+  border-radius: 20px;
+  font-family: 'Nunito', sans-serif;
+  border: 1.5px solid;
+}
+.apill.green  { background: #f1f8e9; border-color: #c5e1a5; color: #2e7d32; }
+.apill.blue   { background: #e3f2fd; border-color: #90caf9; color: #1565c0; }
+.apill.orange { background: #fff8e1; border-color: #ffe082; color: #e65100; }
+.apill.teal   { background: #e0f2f1; border-color: #80cbc4; color: #00695c; }
+
+/* Summary */
+.analysis-summary {
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text);
+  font-weight: 600;
+  padding: 13px 16px;
+  background: var(--leaf-pale);
+  border-radius: 11px;
+  border-left: 4px solid var(--leaf);
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Section titles */
+.analysis-section-title {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-soft);
+  margin-bottom: 8px;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* What is this */
+.analysis-what {
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Coloured info boxes */
+.analysis-box {
+  border-radius: 0 10px 10px 0;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.6;
+  font-family: 'Nunito', sans-serif;
+}
+.analysis-box.green-box  { background: #e8f5e9; border-left: 4px solid #2e7d32; color: #1b5e20; }
+.analysis-box.amber-box  { background: #fff8e1; border-left: 4px solid #f9a825; color: #e65100; }
+.analysis-box.blue-box   { background: #e3f2fd; border-left: 4px solid #1976d2; color: #1a237e; }
+.analysis-box.red-box    { background: #fbe9e7; border-left: 4px solid #e64a19; color: #bf360c; }
+
+/* Actions */
+.analysis-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.analysis-action-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 11px 13px;
+  background: var(--sky);
+  border-radius: 11px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--leaf);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+.analysis-action-num {
+  font-weight: 800;
+  color: var(--leaf);
+  font-size: 0.82rem;
+  min-width: 18px;
+  padding-top: 1px;
+  flex-shrink: 0;
+  font-family: 'Nunito', sans-serif;
+}
+
+/* Tips */
+.analysis-tips {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.analysis-tip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.87rem;
+  line-height: 1.55;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+.analysis-tip-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--leaf);
+  flex-shrink: 0;
+  margin-top: 6px;
+}
+
+/* Farmer tip */
+.analysis-farmer-tip {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  background: var(--amber-pale);
+  border-radius: 11px;
+  border-left: 4px solid var(--amber-bdr);
+  font-size: 0.88rem;
+  line-height: 1.55;
+  color: var(--text-mid);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+.analysis-farmer-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 2px;
+}
+
+/* Loading */
+.analysis-loading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 18px;
+  font-size: 0.88rem;
+  color: var(--leaf);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
+}
+
+.analysis-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--leaf-pale);
+  border-top-color: var(--leaf);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Error */
+.analysis-error {
+  padding: 14px 18px;
+  font-size: 0.85rem;
+  color: var(--red);
+  font-weight: 600;
+  font-family: 'Nunito', sans-serif;
 }

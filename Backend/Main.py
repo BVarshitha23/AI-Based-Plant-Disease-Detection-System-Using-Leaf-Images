@@ -28,7 +28,8 @@ from config import (
     groq_client,
 )
 from database import get_db, init_db
-from schemas import AIAdviceRequest, FeedbackRequest, TranslateRequest
+from schemas import AIAdviceRequest, FeedbackRequest, TranslateRequest, WeatherAdviceRequest
+from weather import get_weather, get_location_name, get_soil_info, get_sowing_context, get_date_context, build_context_prompt
 
 
 # LOAD MODEL & CLASS LABELS
@@ -158,6 +159,9 @@ def serve_history_page():
 def serve_admin():
     return FileResponse(f"{FRONTEND_DIR}/admin.html")
 
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
 
 # PREDICT ROUTE
 @app.post("/predict")
@@ -209,8 +213,8 @@ async def predict(
 
 
 #  GROQ AI ADVICE ROUTE
-@app.post("/gemini-advice")
-async def gemini_advice(
+@app.post("/groq-advice")
+async def groq_advice(
     body:         AIAdviceRequest,
     current_user: dict = Depends(get_current_user),
 ):
@@ -301,6 +305,88 @@ Be specific, practical, and use simple language. Include specific fungicide/pest
                 status_code=429,
                 detail="AI quota exceeded. Please try again in a minute.",
             )
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
+
+
+#  WEATHER + LOCATION + SOIL + SEASON ADVICE 
+@app.post("/weather-advice")
+async def weather_advice(
+    body:         WeatherAdviceRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    if groq_client is None:
+        raise HTTPException(status_code=503, detail="Groq API key not configured")
+
+    import asyncio
+
+    # Fetch all live data in parallel
+    weather, location, soil = await asyncio.gather(
+        get_weather(body.latitude, body.longitude),
+        get_location_name(body.latitude, body.longitude),
+        get_soil_info(body.latitude, body.longitude),
+    )
+
+    # Sowing + date context — instant, no API
+    sowing_ctx = get_sowing_context(body.sowing_date)
+    date_ctx   = get_date_context()
+
+    disease_info = {
+        "predicted_class": body.predicted_class,
+        "confidence":      body.confidence,
+        "severity_pct":    body.severity_pct,
+        "stage":           body.stage,
+        "urgency":         body.urgency,
+    }
+
+    prompt = build_context_prompt(
+        disease_info, weather, location, soil,
+        body.soil_type, sowing_ctx, body.irrigation_method, date_ctx,
+    )
+
+    raw_text = ""
+    try:
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role":    "system",
+                    "content": "You are an expert agronomist. Always respond with valid JSON only. "
+                               "No markdown, no explanation, just the JSON object.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=1200,
+            temperature=0.3,
+        )
+        raw_text = (response.choices[0].message.content or "").strip()
+        raw_text = re.sub(r"^```(?:json)?\s*\n?", "", raw_text)
+        raw_text = re.sub(r"\n?```\s*$", "", raw_text).strip()
+        advice   = json.loads(raw_text)
+
+        return {
+            "success":  True,
+            "advice":   advice,
+            "context": {
+                "weather":    weather,
+                "location":   location,
+                "soil":       soil,
+                "sowing":     sowing_ctx,
+                "date":       date_ctx,
+                "soil_type":  body.soil_type,
+                "irrigation": body.irrigation_method,
+            },
+            "model": "llama-3.1-8b-instant",
+        }
+
+    except json.JSONDecodeError as e:
+        return {
+            "success": False,
+            "advice":  {"summary": raw_text},
+            "error":   f"JSON parse error: {str(e)}",
+        }
+    except Exception as e:
+        if "rate_limit" in str(e).lower() or "429" in str(e):
+            raise HTTPException(status_code=429, detail="AI quota exceeded. Please try again in a minute.")
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
 
 

@@ -72,7 +72,7 @@ async def get_location_name(lat: float, lon: float) -> dict:
         return {"display": "Unknown", "city": "Unknown", "state": "Unknown", "country": "Unknown"}
 
 
-#  WEATHER (Open-Meteo — free, no key needed) 
+#  WEATHER  
 async def get_weather(lat: float, lon: float) -> dict:
     try:
         async with httpx.AsyncClient(timeout=8) as client:
@@ -206,11 +206,6 @@ Soil pH       : {soil['ph']}
 Nitrogen      : {soil['nitrogen']} cg/kg
 Organic Carbon: {soil['soc']} dg/kg
 
-=== CROP SOWING INFORMATION ===
-Sowing Date   : {sowing_ctx['sowing_date']}
-Days in Field : {sowing_ctx['days_since_sowing']}
-Note          : {sowing_ctx['sowing_note']}
-
 === IRRIGATION METHOD ===
 Method        : {irrigation if irrigation and irrigation != 'Unknown' else 'Not specified — assume common method for this region'}
 
@@ -228,7 +223,7 @@ Using all the above real data, reason dynamically about:
 The plant is HEALTHY. Respond ONLY with a valid JSON object (no markdown, no extra text):
 {
   "summary": "One friendly sentence praising the farmer, mentioning their location and current weather.",
-  "crop_stage": "What growth stage is this crop likely at right now based on sowing date, month and location?",
+  "crop_stage": "Based on the current month and region, what growth stage is this crop likely at right now?",
   "season_assessment": "What season/period is this for this specific crop in this region right now?",
   "weather_impact": "How will the next 3 days of weather affect this healthy plant? Be specific about temperature and rain.",
   "soil_insight": "What does the soil pH and type mean for this crop's nutrient availability and disease resistance?",
@@ -242,7 +237,7 @@ The plant is HEALTHY. Respond ONLY with a valid JSON object (no markdown, no ext
 Respond ONLY with a valid JSON object (no markdown, no extra text):
 {
   "summary": "One urgent sentence: disease name + how current weather in this location makes it worse or better.",
-  "crop_stage": "What growth stage is this crop at based on sowing date and current month? How does disease at this stage affect yield?",
+  "crop_stage": "Based on the current month and region, what growth stage is this crop likely at? How does disease at this stage affect yield?",
   "season_assessment": "What season is this for this crop in this region? Is this disease common now? What makes this timing critical?",
   "weather_impact": "How will temperature, humidity and the rain forecast affect disease spread in next 3 days? Should farmer delay or rush treatment?",
   "soil_impact": "MUST be a plain string. How does the soil pH and type affect: (a) disease severity, (b) fungicide effectiveness, (c) treatment absorption?",
@@ -251,6 +246,10 @@ Respond ONLY with a valid JSON object (no markdown, no extra text):
   "farmer_tip": "One hyper-local tip: specific chemical/method available in Indian markets for this region and season.",
   "risk_level": "Critical/High/Medium/Low — based on disease severity + weather + crop stage combined"
 }
-Critical rules: If rain is expected in <24hrs, tell farmer NOT to spray today and give exact alternative timing. Always mention specific Indian fungicide/pesticide brand names. Consider irrigation method when advising water management."""
+Based on the actual rain forecast data above, reason yourself:
+- If rain_3day_mm is low and precipitation is 0, confidently tell the farmer it is safe to spray today.
+- If rain is genuinely expected within 24 hours, tell farmer to delay and give exact alternative timing.
+- Do NOT add rain disclaimers if the data shows little to no rain.
+Always mention specific Indian fungicide/pesticide brand names. Consider irrigation method when advising water management."""
 
     return prompt

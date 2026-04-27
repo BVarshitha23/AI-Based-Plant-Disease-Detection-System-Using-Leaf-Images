@@ -30,7 +30,7 @@ function initLocation() {
     () => {
       if (statusEl) { statusEl.className = 'location-status err'; textEl.innerHTML = '<i data-lucide="alert-triangle" style="width:14px;height:14px;color:#e65100;vertical-align:middle;flex-shrink:0;"></i> Location denied — weather advice will be skipped'; }
     },
-    { timeout: 8000 }
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
   );
 }
 const LANG_NAMES = {
@@ -354,6 +354,7 @@ async function fetchUnifiedAnalysis({ predicted_class, confidence, severity_pct,
       if (!data.advice) throw new Error('No advice returned');
       advice  = data.advice;
       context = null;
+      if (currentResult) currentResult.weatherData = { advice, context: null };
     }
 
     renderUnifiedAnalysis(card, advice, context);
@@ -707,7 +708,7 @@ function buildReportHTML(data, imgSrc) {
 
     ${(function() {
       const wd = data.weatherData;
-      if (!wd) return '';
+      if (!wd || !wd.context) return '';
 
       const w        = wd.context?.weather    || {};
       const l        = wd.context?.location   || {};

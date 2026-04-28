@@ -298,9 +298,8 @@ function safeStr(val) {
   return String(val);
 }
 
-// ============================================================
+
 //  UNIFIED ANALYSIS — plant health + weather + soil combined
-// ============================================================
 async function fetchUnifiedAnalysis({ predicted_class, confidence, severity_pct, stage, urgency }) {
   const card = document.getElementById('analysisCard');
   if (!card) return;
@@ -820,14 +819,9 @@ async function downloadReportPNG() {
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
-// ============================================================
-//  TREATMENT COST ESTIMATOR
-// ============================================================
 
-// ============================================================
+
 //  GROQ-POWERED COST ESTIMATOR + SPRAY SCHEDULER
-// ============================================================
-
 async function fetchGroqSpray(data) {
   const sprayEl   = document.getElementById('spraySchedulerCard');
   if (!sprayEl) return;

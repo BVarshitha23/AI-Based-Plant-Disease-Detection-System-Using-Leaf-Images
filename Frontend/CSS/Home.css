@@ -169,6 +169,17 @@
   padding: 0 8px;
 }
 
+/* Fix footer gap */
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.how-section {
+  flex: 1;
+}
+
 /* Responsive */
 @media (max-width: 860px) {
   .hero        { padding: 52px 24px; }

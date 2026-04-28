@@ -6,13 +6,14 @@
     <title>Admin Dashboard — LeafSense</title>
     <link rel="icon" type="image/png" href="favicon.png" />
     <link rel="stylesheet" href="CSS/admin.css" />
+    <link rel="stylesheet" href="CSS/network.css" />
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap" rel="stylesheet"/>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
   </head>
   <body>
 
-    <!-- ── SIDEBAR ── -->
+    <!--  SIDEBAR -->
     <aside class="ad-sidebar" id="sidebar">
       <div class="ad-sidebar-logo">
         <div class="ad-logo-icon">
@@ -164,6 +165,7 @@
               <option value="user">User</option>
             </select>
             <select class="ad-select" id="userSortFilter" onchange="filterUsers()">
+              <option value="" disabled selected hidden>Sort by</option>
               <option value="newest">Newest First</option>
               <option value="oldest">Oldest First</option>
               <option value="name">Name A–Z</option>
@@ -219,7 +221,7 @@
         </div>
       </section>
 
-      <!-- ════ DETECTIONS ════ -->
+      <!-- DETECTIONS  -->
       <section class="ad-tab" id="tab-detections">
         <div class="ad-section-head">
           <h1 class="ad-section-title">All Detections</h1>
@@ -246,6 +248,7 @@
             <option value="Critical">Critical</option>
           </select>
           <select class="ad-select" id="detectSort" onchange="filterDetections()">
+            <option value="" disabled selected hidden>Sort by</option>
             <option value="newest">Newest First</option>
             <option value="oldest">Oldest First</option>
             <option value="confidence">High Confidence</option>
@@ -276,7 +279,7 @@
         <div id="detectPagination" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:16px;flex-wrap:wrap"></div>
       </section>
 
-<!-- ════ FEEDBACK ════ -->
+<!--  FEEDBACK  -->
 <section class="ad-tab" id="tab-feedback">
   <div class="ad-section-head">
     <h1 class="ad-section-title">Feedback Inbox</h1>
@@ -378,7 +381,7 @@
 </section>
 
     </div>
-
+    <script src="Scripts/network.js"></script>
     <script src="Scripts/auth.js"></script>
     <script src="Scripts/admin.js"></script>
   </body>

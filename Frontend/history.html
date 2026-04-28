@@ -7,6 +7,7 @@
     <link rel="icon" type="image/png" href="favicon.png" />
     <link rel="stylesheet" href="static/CSS/style.css" />
     <link rel="stylesheet" href="static/CSS/history.css" />
+    <link rel="stylesheet" href="CSS/network.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap"
       rel="stylesheet"
@@ -139,6 +140,7 @@
           <option value="Critical">Critical</option>
         </select>
         <select class="filter-select" id="sortFilter" onchange="applyFilters()">
+          <option value="" disabled selected hidden>Sort by</option>
           <option value="newest">Newest First</option>
           <option value="oldest">Oldest First</option>
           <option value="conf_desc">Highest Confidence</option>
@@ -194,6 +196,7 @@
     </footer>
 
     <script>lucide.createIcons();</script>
+    <script src="Scripts/network.js"></script>
     <script src="Scripts/auth.js"></script>
     <script src="Scripts/history.js"></script>
     <script src="Scripts/navbar.js"></script>

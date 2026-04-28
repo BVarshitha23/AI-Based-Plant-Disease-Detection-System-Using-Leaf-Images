@@ -1,0 +1,179 @@
+/* ── Full-screen overlay ── */
+#ls-network-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(240, 247, 238, 0.97);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Nunito', sans-serif;
+  animation: ls-net-fadein 0.3s ease;
+}
+
+#ls-network-overlay.ls-visible {
+  display: flex;
+}
+
+@keyframes ls-net-fadein {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1);    }
+}
+
+/* ── Card ── */
+.ls-net-card {
+  background: #ffffff;
+  border: 2px solid #c8e6c9;
+  border-radius: 20px;
+  padding: 44px 40px 36px;
+  max-width: 420px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 40px rgba(46, 125, 50, 0.13);
+}
+
+/* ── Icon circle ── */
+.ls-net-icon-wrap {
+  width: 72px;
+  height: 72px;
+  background: #ffebee;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 22px;
+  animation: ls-net-pulse 2s ease-in-out infinite;
+}
+
+@keyframes ls-net-pulse {
+  0%, 100% { transform: scale(1);    box-shadow: 0 0 0 0    rgba(198, 40, 40, 0.18); }
+  50%       { transform: scale(1.06); box-shadow: 0 0 0 12px rgba(198, 40, 40, 0);   }
+}
+
+.ls-net-icon-wrap svg {
+  width: 34px;
+  height: 34px;
+  stroke: #c62828;
+}
+
+/* ── "No Internet" badge ── */
+.ls-net-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #c62828;
+  background: #ffebee;
+  border: 1px solid #ef9a9a;
+  border-radius: 20px;
+  padding: 5px 14px;
+  margin-bottom: 26px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+
+.ls-net-badge-dot {
+  width: 7px;
+  height: 7px;
+  background: #c62828;
+  border-radius: 50%;
+  animation: ls-net-blink 1.2s ease-in-out infinite;
+}
+
+@keyframes ls-net-blink {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.2; }
+}
+
+/* ── Title & message ── */
+.ls-net-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1c2b1e;
+  margin-bottom: 10px;
+  letter-spacing: -0.3px;
+}
+
+.ls-net-msg {
+  font-size: 14px;
+  color: #4a6350;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+
+/* ── Retry button ── */
+.ls-net-retry-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #2e7d32;
+  color: #ffffff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  padding: 12px 28px;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  letter-spacing: 0.2px;
+}
+
+.ls-net-retry-btn:hover  { background: #43a047; }
+.ls-net-retry-btn:active { transform: scale(0.97); }
+
+.ls-net-retry-btn:disabled {
+  background: #a5d6a7;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.ls-net-retry-btn svg {
+  width: 15px;
+  height: 15px;
+  stroke: #ffffff;
+}
+
+/* ── Auto-retry note ── */
+.ls-net-auto {
+  font-size: 12px;
+  color: #7a9680;
+  margin-top: 16px;
+}
+
+/* ── "Back online" toast ── */
+#ls-net-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-80px);
+  z-index: 100000;
+  background: #2e7d32;
+  color: #ffffff;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 12px 22px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 20px rgba(46, 125, 50, 0.25);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+#ls-net-toast.ls-toast-show {
+  transform: translateX(-50%) translateY(0);
+}
+
+#ls-net-toast svg {
+  width: 16px;
+  height: 16px;
+  stroke: #ffffff;
+  flex-shrink: 0;
+}

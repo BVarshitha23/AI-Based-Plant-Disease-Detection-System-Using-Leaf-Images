@@ -6,11 +6,14 @@
     <title>Detect — LeafSense</title>
     <link rel="stylesheet" href="CSS/style.css" />
     <link rel="stylesheet" href="CSS/Detect.css" />
+    <link rel="stylesheet" href="CSS/network.css" />
     <link
       href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Lora:ital,wght@0,600;1,500&display=swap"
       rel="stylesheet"
     />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   </head>
   <body>
     <nav class="navbar">
@@ -106,6 +109,16 @@
           <img id="previewImg" class="preview-img" alt="Leaf preview" />
         </div>
 
+
+        <!-- Sowing Date + Location -->
+        <div class="soil-row" id="soilRow">
+
+          <!-- Location status -->
+          <div class="location-status" id="locationStatus">
+            <span id="locationText"><i data-lucide="map-pin" style="width:14px;height:14px;color:#888;vertical-align:middle;flex-shrink:0;"></i> Getting your location for weather &amp; soil analysis...</span>
+          </div>
+        </div>
+
         <!-- Scan Button -->
         <div id="scanBtnWrap">
           <button class="scan-btn" id="scanBtn" disabled onclick="startScan()">
@@ -133,10 +146,6 @@
           data-lucide="alert-triangle"
           style="width: 18px; height: 18px; flex-shrink: 0"
         ></i>
-        <div>
-          Low confidence result. Please consult your nearest KVK or call
-          <strong>1800-180-1551</strong>.
-        </div>
       </div>
 
       <div class="result-banner">
@@ -159,7 +168,7 @@
 
 <!-- REPLACE your existing .result-grid div with this -->
 <div class="result-grid">
-  <!-- Severity card -->
+  <!-- ROW 1: Severity (50%) + Language (50%) -->
   <div class="res-card">
     <div class="res-card-title">
       <i data-lucide="activity" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
@@ -178,8 +187,6 @@
       <div class="sev-stage" id="s3">Critical<br />75%+</div>
     </div>
   </div>
-  <div id="geminiCard"></div>
-  <!-- Language card — spans full width -->
   <div class="res-card lang-card">
     <div class="res-card-title">
       <i data-lucide="languages" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
@@ -198,15 +205,40 @@
       Listen Now
     </button>
   </div>
+  <!-- ROW 2: AI Analysis (50%) + Spray Scheduler (50%) -->
+  <div id="analysisCard"></div>
+  <div class="res-card" id="spraySchedulerCard" style="display:none;"></div>
 </div>
       <div class="scan-again-row">
         <button class="scan-again-btn" onclick="resetScan()">
           <i data-lucide="refresh-cw" style="width: 15px; height: 15px"></i>
           Scan Another Leaf
         </button>
+        <button class="scan-again-btn dl-report-btn" id="dlReportBtn" onclick="showReportModal()">
+          <i data-lucide="file-text" style="width:15px;height:15px"></i>
+          Download Report
+        </button>
       </div>
     </section>
-
+    
+<!-- REPORT MODAL -->
+<div class="report-overlay" id="reportOverlay">
+  <div class="report-modal">
+    <div class="report-actions">
+      <span class="report-actions-title">Scan Report Preview</span>
+      <div class="report-action-btns">
+        <button class="rep-btn pdf-btn" onclick="downloadReportPDF()">
+          <i data-lucide="file-text" style="width:15px;height:15px"></i> Download PDF
+        </button>
+        <button class="rep-btn" onclick="downloadReportPNG()">
+          <i data-lucide="image" style="width:15px;height:15px"></i> Save as Image
+        </button>
+        <button class="rep-close-btn" onclick="closeReportModal()">Close</button>
+      </div>
+    </div>
+    <div id="reportPrintArea"></div>
+  </div>
+</div>
     <!-- FOOTER -->
     <footer class="site-footer">
       <div class="logo">
@@ -220,7 +252,7 @@
       </div>
       <p>AI-Based Plant Disease Detection · Built for Farmers</p>
     </footer>
-
+    <script src="Scripts/network.js"></script>
     <script src="Scripts/detect.js"></script>
     <script src="Scripts/auth.js"></script>
     <script src="Scripts/navbar.js"></script>

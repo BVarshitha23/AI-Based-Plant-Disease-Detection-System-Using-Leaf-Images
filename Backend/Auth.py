@@ -150,12 +150,21 @@ async def verify_recaptcha(token: str) -> bool:
         return True
     if not token:
         return False
-    async with httpx.AsyncClient() as client:
-        res = await client.post(
-            "https://www.google.com/recaptcha/api/siteverify",
-            data={"secret": RECAPTCHA_SECRET, "response": token},
-        )
-        return res.json().get("success", False)
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            res = await client.post(
+                "https://www.google.com/recaptcha/api/siteverify",
+                data={"secret": RECAPTCHA_SECRET, "response": token},
+            )
+            result = res.json()
+            print(f"[reCAPTCHA] response: {result}")  # helps debug
+            return result.get("success", False)
+    except httpx.TimeoutException:
+        print("[reCAPTCHA] Timeout — allowing login")
+        return True   # don't block user if Google is slow
+    except Exception as e:
+        print(f"[reCAPTCHA] Error: {e} — allowing login")
+        return True
 
 
 #  AUTH ROUTES 

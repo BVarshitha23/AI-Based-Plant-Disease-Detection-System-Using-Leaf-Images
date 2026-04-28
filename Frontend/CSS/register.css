@@ -225,6 +225,13 @@
   /* KEY FIX: ensure button fills full width */
   box-sizing: border-box;
 }
+.btn-auth:disabled {
+  background: #a5d6a7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.7;
+}
 .btn-auth:hover {
   background: var(--leaf-light); transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(46,125,50,0.35);

@@ -343,6 +343,14 @@
   margin-bottom: 4px;
 }
 
+.btn-auth:disabled {
+  background: #a5d6a7;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.7;
+}
+
 /* Scale down on small screens */
 @media (max-width: 380px) {
   .recaptcha-wrap .g-recaptcha {

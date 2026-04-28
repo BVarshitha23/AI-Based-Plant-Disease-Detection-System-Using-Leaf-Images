@@ -302,8 +302,38 @@ body {
 /* Result Grid  */
 .result-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 18px;
+  align-items: stretch;
+}
+
+/* Analysis card wrapper — fills grid cell */
+#analysisCard {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  max-height: 560px;
+}
+
+#analysisCard .analysis-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  margin: 0;
+  animation: none;
+}
+
+/* When healthy — JS adds .full-width class to analysisCard */
+#analysisCard.full-width {
+  grid-column: 1 / -1;
+  max-height: none;
+}
+
+#analysisCard.full-width .analysis-card {
+  max-height: 560px;
 }
 
 .res-card {
@@ -313,9 +343,19 @@ body {
   padding: 20px;
 }
 
-.lang-card {
-  grid-column: 1;
+/* bottom-row removed — cards are direct grid children */
+
+/* Spray Scheduler card — same max-height as analysis, scrolls */
+#spraySchedulerCard {
+  max-height: 560px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c8e6c9 transparent;
 }
+#spraySchedulerCard::-webkit-scrollbar { width: 5px; }
+#spraySchedulerCard::-webkit-scrollbar-track { background: transparent; }
+#spraySchedulerCard::-webkit-scrollbar-thumb { background: #c8e6c9; border-radius: 10px; }
+#spraySchedulerCard::-webkit-scrollbar-thumb:hover { background: #81c784; }
 
 .res-card-title {
   font-size: 11px;
@@ -1508,7 +1548,8 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
    UNIFIED ANALYSIS CARD
 ══════════════════════════════════════════════════════════ */
 #analysisCard {
-  margin-top: 18px;
+  margin: 0;
+  padding: 0;
 }
 
 .analysis-card {
@@ -1516,7 +1557,7 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   overflow: hidden;
   border: 2px solid var(--border);
   background: var(--white);
-  animation: fadeSlideUp 0.5s ease both;
+  animation: none;
 }
 
 /* Header */
@@ -1590,10 +1631,30 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
 
 /* Body */
 .analysis-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #c8e6c9 transparent;
   padding: 18px;
+  padding-right: 12px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.analysis-body::-webkit-scrollbar {
+  width: 5px;
+}
+.analysis-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+.analysis-body::-webkit-scrollbar-thumb {
+  background: #c8e6c9;
+  border-radius: 10px;
+}
+.analysis-body::-webkit-scrollbar-thumb:hover {
+  background: #81c784;
 }
 
 /* Context pills */
@@ -1776,4 +1837,259 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   color: var(--red);
   font-weight: 600;
   font-family: 'Nunito', sans-serif;
+}
+/* ── TREATMENT COST ESTIMATOR ───────────────────────── */
+.cost-product-row {
+  background: var(--leaf-pale, #f1f8e9);
+  border: 1.5px solid var(--leaf, #2e7d32);
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 12px 0 10px;
+}
+.cost-product-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text, #1a1a1a);
+  margin-bottom: 3px;
+}
+.cost-product-rate {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft, #888);
+}
+.cost-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.cost-item {
+  background: var(--sky, #f8fafc);
+  border: 1.5px solid var(--border, #e8edf0);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.cost-item.highlight {
+  background: #fff8e1;
+  border-color: #ffe082;
+}
+.cost-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-soft, #888);
+  margin-bottom: 4px;
+}
+.cost-val {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--text, #1a1a1a);
+}
+.cost-val.green  { color: #2e7d32; }
+.cost-val.orange { color: #e65100; font-size: 15px; }
+.cost-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft, #888);
+  background: var(--sky, #f8fafc);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+
+/* ── SPRAY SCHEDULER ───────────────────────────────── */
+.spray-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-soft, #888);
+  padding: 20px 0;
+}
+.spray-spinner {
+  width: 18px; height: 18px;
+  border: 2.5px solid var(--border, #e8edf0);
+  border-top-color: var(--leaf, #2e7d32);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.spray-rain-warn {
+  display: flex; align-items: center; gap: 6px;
+  background: #fff3e0; border: 1.5px solid #ffcc80;
+  border-radius: 8px; padding: 8px 12px;
+  font-size: 12px; font-weight: 700; color: #e65100;
+  margin: 10px 0;
+}
+.spray-rain-ok {
+  display: flex; align-items: center; gap: 6px;
+  background: #e3f2fd; border: 1.5px solid #90caf9;
+  border-radius: 8px; padding: 8px 12px;
+  font-size: 12px; font-weight: 700; color: #1565c0;
+  margin: 10px 0;
+}
+.spray-rain-safe {
+  display: flex; align-items: center; gap: 6px;
+  background: #e8f5e9; border: 1.5px solid #a5d6a7;
+  border-radius: 8px; padding: 8px 12px;
+  font-size: 12px; font-weight: 700; color: #2e7d32;
+  margin: 10px 0;
+}
+.spray-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin: 10px 0;
+  border-left: 2.5px solid var(--border, #e8edf0);
+  padding-left: 16px;
+}
+.spray-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 8px 0;
+  position: relative;
+}
+.spray-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--border, #ccc);
+  border: 2px solid white;
+  box-shadow: 0 0 0 2px var(--border, #ccc);
+  flex-shrink: 0;
+  margin-top: 4px;
+  margin-left: -20px;
+}
+.spray-first .spray-dot {
+  background: var(--leaf, #2e7d32);
+  box-shadow: 0 0 0 2px var(--leaf, #2e7d32);
+}
+.spray-info { flex: 1; }
+.spray-date {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text, #1a1a1a);
+}
+.spray-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--leaf, #2e7d32);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.spray-time {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft, #888);
+  margin-top: 2px;
+}
+.spray-num {
+  font-size: 18px;
+  font-weight: 900;
+  color: var(--border, #ddd);
+  flex-shrink: 0;
+}
+.spray-product-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-soft, #888);
+  background: var(--sky, #f8fafc);
+  border-radius: 8px;
+  padding: 8px 10px;
+  margin-top: 6px;
+}
+
+/* ── COST + SPRAY SIDE BY SIDE ───────────────────────── */
+.cost-spray-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  width: 100%;
+}
+
+.cost-spray-row .res-card {
+  margin: 0;
+}
+
+@media (max-width: 700px) {
+  .cost-spray-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── GROQ AI BADGE ───────────────────────────────────── */
+.groq-badge {
+  margin-left: auto;
+  background: linear-gradient(135deg, #4a90d9, #7c3aed);
+  color: #fff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 2px 7px;
+  border-radius: 20px;
+  text-transform: uppercase;
+}
+
+/* ── COST ALT PRODUCT ────────────────────────────────── */
+.cost-alt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #1565c0;
+  background: #e3f2fd;
+  border-radius: 8px;
+  padding: 7px 10px;
+  margin-bottom: 8px;
+}
+
+/* ── SPRAY NOTES ─────────────────────────────────────── */
+.spray-notes {
+  font-size: 11px;
+  font-weight: 600;
+  color: #e65100;
+  background: #fff8e1;
+  border-radius: 6px;
+  padding: 4px 8px;
+  margin-top: 4px;
+}
+
+/* ── SPRAY PRECAUTIONS ───────────────────────────────── */
+.spray-precautions {
+  background: #f8fafc;
+  border: 1.5px solid var(--border, #e8edf0);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-top: 8px;
+}
+.spray-prec-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text, #1a1a1a);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+}
+.spray-prec-list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.spray-prec-list li {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-soft, #555);
+  line-height: 1.4;
 }

@@ -146,7 +146,7 @@ async function startScan() {
   document.getElementById('resultSection').classList.remove('show');
 
   const analysisCard = document.getElementById('analysisCard');
-  if (analysisCard) analysisCard.innerHTML = '';
+  if (analysisCard) { analysisCard.innerHTML = ''; analysisCard.classList.remove('full-width'); }
 
   let si = 0;
   const stepEl = document.getElementById('anaStep');
@@ -192,6 +192,7 @@ async function startScan() {
       document.getElementById('analyzingBox').classList.remove('show');
       renderResult(currentResult);
       fetchUnifiedAnalysis({ predicted_class, confidence, severity_pct: pct, stage, urgency });
+      fetchGroqSpray(currentResult);
     }, 400);
 
   } catch (error) {
@@ -342,6 +343,7 @@ async function fetchUnifiedAnalysis({ predicted_class, confidence, severity_pct,
       advice  = data.advice;
       context = data.context || null;
       if (currentResult) currentResult.weatherData = { advice, context };
+      fetchGroqSpray(currentResult);
     } else {
       // Fallback: basic AI-only call (no location)
       const res = await fetch('/groq-advice', {
@@ -585,7 +587,7 @@ function resetScan() {
   document.getElementById('unknownBar').classList.remove('show');
 
   const analysisCard = document.getElementById('analysisCard');
-  if (analysisCard) analysisCard.innerHTML = '';
+  if (analysisCard) { analysisCard.innerHTML = ''; analysisCard.classList.remove('full-width'); }
 
   const playBtn = document.getElementById('playBtn');
   playBtn.innerHTML = '<i data-lucide="volume-2" style="width:16px;height:16px;"></i> Listen Now';
@@ -817,4 +819,145 @@ async function downloadReportPNG() {
   link.download = `LeafSense_Report_${Date.now()}.png`;
   link.href = canvas.toDataURL('image/png');
   link.click();
+}
+// ============================================================
+//  TREATMENT COST ESTIMATOR
+// ============================================================
+
+// ============================================================
+//  GROQ-POWERED COST ESTIMATOR + SPRAY SCHEDULER
+// ============================================================
+
+async function fetchGroqSpray(data) {
+  const sprayEl   = document.getElementById('spraySchedulerCard');
+  if (!sprayEl) return;
+  const isHealthy = (data.predicted_class || '').toLowerCase().includes('healthy');
+  const analysisEl = document.getElementById('analysisCard');
+  if (isHealthy) {
+    sprayEl.style.display = 'none';
+    if (analysisEl) analysisEl.classList.add('full-width');
+    return;
+  }
+  if (analysisEl) analysisEl.classList.remove('full-width');
+
+  // Show loading
+  sprayEl.style.display = 'block';
+  sprayEl.innerHTML = `
+    <div class="res-card-title">
+      <i data-lucide="calendar-clock" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
+      Spray Scheduler
+    </div>
+    <div class="spray-loading">
+      <div class="spray-spinner"></div> Building your AI spray schedule…
+    </div>`;
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+
+  // Build payload — include weather if available
+  const wx     = data.weatherData?.context?.weather  || {};
+  const loc    = data.weatherData?.context?.location || {};
+  const sowCtx = data.weatherData?.context?.sowing   || {};
+
+  const payload = {
+    predicted_class: data.predicted_class,
+    confidence:      data.confidence,
+    severity_pct:    data.pct || 0,
+    stage:           data.stage,
+    urgency:         data.urgency,
+    temperature_c:   wx.temperature_c  ?? null,
+    humidity_pct:    wx.humidity_pct   ?? null,
+    rain_3day_mm:    wx.rain_3day_mm   ?? null,
+    rain_forecast:   wx.rain_forecast  ?? null,
+    location_city:   loc.city          ?? null,
+    location_state:  loc.state         ?? null,
+    soil_type:       data.weatherData?.context?.soil_type ?? null,
+    sowing_date:     sowCtx.sowing_date ?? null,
+  };
+
+  try {
+    const res = await fetch('/groq-cost-spray', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', ...Session.authHeaders() },
+      body:    JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    const result = await res.json();
+    if (!result.success) throw new Error(result.error || 'Groq error');
+    renderGroqSpray(result.spray);
+  } catch (err) {
+    console.error('Spray Groq error:', err);
+    renderSprayError();
+  }
+}
+
+function renderGroqSpray(spray) {
+  const el = document.getElementById('spraySchedulerCard');
+  if (!el || !spray) { renderSprayError(); return; }
+
+  const statusMap = {
+    safe_to_spray: { cls: 'spray-rain-safe', icon: 'sun' },
+    delay_rain:    { cls: 'spray-rain-warn', icon: 'cloud-rain' },
+    light_rain_ok: { cls: 'spray-rain-ok',   icon: 'cloud' },
+  };
+  const st = statusMap[spray.weather_status] || statusMap['safe_to_spray'];
+
+  const today = new Date();
+
+  const scheduleHTML = (spray.schedule || []).map((s, idx) => {
+    const sprayDate = new Date(today);
+    sprayDate.setDate(today.getDate() + (s.date_offset_days || 0));
+    const dateStr = sprayDate.toLocaleDateString('en-IN', { weekday:'short', day:'numeric', month:'short' });
+    return `
+      <div class="spray-item ${idx === 0 ? 'spray-first' : ''}">
+        <div class="spray-dot"></div>
+        <div class="spray-info">
+          <div class="spray-date">${dateStr}</div>
+          <div class="spray-label">${s.label}</div>
+          <div class="spray-time">
+            <i data-lucide="clock" style="width:11px;height:11px;vertical-align:middle;"></i>
+            ${s.best_time}
+          </div>
+          ${s.notes ? `<div class="spray-notes">${s.notes}</div>` : ''}
+        </div>
+        <div class="spray-num">#${s.spray_number}</div>
+      </div>`;
+  }).join('');
+
+  const precautionsHTML = (spray.precautions || []).map(p =>
+    `<li>${p}</li>`
+  ).join('');
+
+  el.innerHTML = `
+    <div class="res-card-title">
+      <i data-lucide="calendar-clock" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
+      Spray Scheduler
+      <span class="groq-badge">AI</span>
+    </div>
+    <div class="${st.cls}">
+      <i data-lucide="${st.icon}" style="width:13px;height:13px;vertical-align:middle;flex-shrink:0;"></i>
+      ${spray.weather_message}
+    </div>
+    <div class="spray-timeline">${scheduleHTML}</div>
+    ${precautionsHTML ? `
+    <div class="spray-precautions">
+      <div class="spray-prec-title">
+        <i data-lucide="shield-alert" style="width:12px;height:12px;vertical-align:middle;flex-shrink:0;"></i>
+        Precautions
+      </div>
+      <ul class="spray-prec-list">${precautionsHTML}</ul>
+    </div>` : ''}`;
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function renderSprayError() {
+  const el = document.getElementById('spraySchedulerCard');
+  if (el) el.innerHTML = `
+    <div class="res-card-title">
+      <i data-lucide="calendar-clock" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
+      Spray Scheduler
+    </div>
+    <div class="analysis-error">
+      <i data-lucide="alert-triangle" style="width:13px;height:13px;color:#c62828;vertical-align:middle;"></i>
+      Spray schedule unavailable right now.
+    </div>`;
+  if (typeof lucide !== 'undefined') lucide.createIcons();
 }

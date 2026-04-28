@@ -28,7 +28,7 @@ from config import (
     groq_client,
 )
 from database import get_db, init_db
-from schemas import AIAdviceRequest, FeedbackRequest, TranslateRequest, WeatherAdviceRequest
+from schemas import AIAdviceRequest, FeedbackRequest, TranslateRequest, WeatherAdviceRequest, CostSprayRequest, ChangePasswordRequest, ForgotPasswordRequest, ResetPasswordRequest, VerifyOTPRequest
 from weather import get_weather, get_location_name, get_soil_info, get_sowing_context, get_date_context, build_context_prompt
 
 
@@ -306,8 +306,7 @@ Be specific, practical, and use simple language. Include specific fungicide/pest
                 detail="AI quota exceeded. Please try again in a minute.",
             )
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
-
-
+    
 #  WEATHER + LOCATION + SOIL + SEASON ADVICE 
 @app.post("/weather-advice")
 async def weather_advice(
@@ -389,6 +388,122 @@ async def weather_advice(
             raise HTTPException(status_code=429, detail="AI quota exceeded. Please try again in a minute.")
         raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
 
+@app.post("/groq-cost-spray")
+async def groq_cost_spray(
+    body:         CostSprayRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    if groq_client is None:
+        raise HTTPException(status_code=503, detail="Groq API key not configured")
+ 
+    is_healthy = "healthy" in body.predicted_class.lower()
+    if is_healthy:
+        return {
+            "success": True,
+            "cost": None,
+            "spray": None,
+        }
+ 
+    # Build weather context string
+    weather_ctx = ""
+    if body.temperature_c is not None:
+        weather_ctx = f"""
+=== LIVE WEATHER AT FARMER'S LOCATION ===
+Temperature   : {body.temperature_c}°C
+Humidity      : {body.humidity_pct}%
+3-Day Rain    : {body.rain_3day_mm} mm — {body.rain_forecast}
+Location      : {body.location_city}, {body.location_state}
+Soil Type     : {body.soil_type or 'Unknown'}
+Sowing Date   : {body.sowing_date or 'Not provided'}"""
+    else:
+        weather_ctx = "Weather/location data not available — give general Indian farming advice."
+ 
+    today = __import__('datetime').date.today()
+ 
+    prompt = f"""You are an expert agronomist for Indian farmers. Given this plant disease detection:
+ 
+Disease       : {body.predicted_class}
+Confidence    : {body.confidence}%
+Severity      : {body.severity_pct}% leaf infected
+Stage         : {body.stage}
+Urgency       : {body.urgency}
+Today's Date  : {today.strftime('%d %B %Y')}
+{weather_ctx}
+ 
+Respond ONLY with a valid JSON object (no markdown, no extra text):
+{{
+  "cost": {{
+    "product_name": "Exact Indian brand name + active ingredient (e.g. Dithane M-45 (Mancozeb 75% WP))",
+    "dosage_rate": "exact dosage per litre of water (e.g. 2.5 g/L)",
+    "sprays_needed": <integer: how many sprays based on severity>,
+    "cost_per_acre_inr": <integer: realistic Indian market price per acre per spray in INR>,
+    "labour_per_spray_inr": <integer: realistic daily labour cost in INR>,
+    "total_low_inr": <integer: minimum total cost for all sprays + labour>,
+    "total_high_inr": <integer: maximum total cost for all sprays + labour>,
+    "alternative_product": "One cheaper alternative product available in Indian markets",
+    "note": "One sentence: when to buy, any mixing advice, or where to get it in India"
+  }},
+  "spray": {{
+    "weather_status": "safe_to_spray | delay_rain | light_rain_ok",
+    "weather_message": "One sentence about current weather and spray safety — be specific about rain data if available",
+    "delay_days": <integer: 0 if safe today, else number of days to wait>,
+    "interval_days": <integer: days between sprays based on disease and severity>,
+    "schedule": [
+      {{
+        "spray_number": 1,
+        "date_offset_days": <integer: days from today for this spray>,
+        "label": "Start Today | Delayed Start | Spray 2 | etc",
+        "best_time": "Early morning 6–9 AM (avoid hot sun)",
+        "notes": "Any specific note for this spray (e.g. add sticker, check rain before spraying)"
+      }}
+    ],
+    "precautions": ["Precaution 1 specific to this disease", "Precaution 2", "Precaution 3"]
+  }}
+}}
+ 
+Rules:
+- spray schedule array must have exactly {{'sprays_needed'}} entries
+- Use realistic Indian market prices (not too high, not too low)
+- If rain > 10mm in 3 days, set delay_days = 2 and weather_status = "delay_rain"
+- If rain 3-7mm, set weather_status = "light_rain_ok" 
+- If rain < 3mm or no weather data, set weather_status = "safe_to_spray" and delay_days = 0
+- Calculate date_offset_days as: delay_days + (spray_index * interval_days)
+- Mention specific Indian fungicide/pesticide brand names
+- All cost values must be realistic integers in Indian Rupees"""
+ 
+    raw_text = ""
+    try:
+        response = groq_client.chat.completions.create(
+            model="llama-3.1-8b-instant",
+            messages=[
+                {
+                    "role":    "system",
+                    "content": "You are an expert agronomist. Always respond with valid JSON only. "
+                               "No markdown, no explanation, just the JSON object.",
+                },
+                {"role": "user", "content": prompt},
+            ],
+            max_tokens=1200,
+            temperature=0.2,
+        )
+ 
+        raw_text = (response.choices[0].message.content or "").strip()
+        raw_text = __import__('re').sub(r"^```(?:json)?\s*\n?", "", raw_text)
+        raw_text = __import__('re').sub(r"\n?```\s*$", "", raw_text).strip()
+        result   = __import__('json').loads(raw_text)
+ 
+        return {
+            "success": True,
+            "cost":    result.get("cost"),
+            "spray":   result.get("spray"),
+        }
+ 
+    except __import__('json').JSONDecodeError as e:
+        return {"success": False, "error": f"JSON parse error: {str(e)}", "raw": raw_text}
+    except Exception as e:
+        if "rate_limit" in str(e).lower() or "429" in str(e):
+            raise HTTPException(status_code=429, detail="AI quota exceeded. Please try again.")
+        raise HTTPException(status_code=500, detail=f"AI error: {str(e)}")
 
 #  TRANSLATE ROUTE 
 @app.post("/api/translate")

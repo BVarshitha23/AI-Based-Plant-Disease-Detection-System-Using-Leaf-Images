@@ -146,10 +146,6 @@
           data-lucide="alert-triangle"
           style="width: 18px; height: 18px; flex-shrink: 0"
         ></i>
-        <div>
-          Low confidence result. Please consult your nearest KVK or call
-          <strong>1800-180-1551</strong>.
-        </div>
       </div>
 
       <div class="result-banner">
@@ -172,7 +168,7 @@
 
 <!-- REPLACE your existing .result-grid div with this -->
 <div class="result-grid">
-  <!-- Severity card -->
+  <!-- ROW 1: Severity (50%) + Language (50%) -->
   <div class="res-card">
     <div class="res-card-title">
       <i data-lucide="activity" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
@@ -191,8 +187,6 @@
       <div class="sev-stage" id="s3">Critical<br />75%+</div>
     </div>
   </div>
-  <div id="analysisCard"></div>
-  <!-- Language card — spans full width -->
   <div class="res-card lang-card">
     <div class="res-card-title">
       <i data-lucide="languages" style="width:13px;height:13px;margin-right:5px;vertical-align:middle;"></i>
@@ -211,6 +205,9 @@
       Listen Now
     </button>
   </div>
+  <!-- ROW 2: AI Analysis (50%) + Spray Scheduler (50%) -->
+  <div id="analysisCard"></div>
+  <div class="res-card" id="spraySchedulerCard" style="display:none;"></div>
 </div>
       <div class="scan-again-row">
         <button class="scan-again-btn" onclick="resetScan()">

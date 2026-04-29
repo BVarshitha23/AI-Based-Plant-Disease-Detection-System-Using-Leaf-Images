@@ -298,9 +298,8 @@ function safeStr(val) {
   return String(val);
 }
 
-// ============================================================
+
 //  UNIFIED ANALYSIS — plant health + weather + soil combined
-// ============================================================
 async function fetchUnifiedAnalysis({ predicted_class, confidence, severity_pct, stage, urgency }) {
   const card = document.getElementById('analysisCard');
   if (!card) return;
@@ -820,14 +819,9 @@ async function downloadReportPNG() {
   link.href = canvas.toDataURL('image/png');
   link.click();
 }
-// ============================================================
-//  TREATMENT COST ESTIMATOR
-// ============================================================
 
-// ============================================================
+
 //  GROQ-POWERED COST ESTIMATOR + SPRAY SCHEDULER
-// ============================================================
-
 async function fetchGroqSpray(data) {
   const sprayEl   = document.getElementById('spraySchedulerCard');
   if (!sprayEl) return;
@@ -932,10 +926,16 @@ function renderGroqSpray(spray) {
       Spray Scheduler
       <span class="groq-badge">AI</span>
     </div>
-    <div class="${st.cls}">
+    ${!!(userLatitude && userLongitude)
+  ? `<div class="${st.cls}">
       <i data-lucide="${st.icon}" style="width:13px;height:13px;vertical-align:middle;flex-shrink:0;"></i>
       ${spray.weather_message}
-    </div>
+     </div>`
+  : `<div class="spray-rain-warn" style="cursor:pointer;" onclick="requestLocationAndRescan()">
+      <i data-lucide="map-pin" style="width:13px;height:13px;vertical-align:middle;flex-shrink:0;"></i>
+      Enable location for accurate weather-based spray timing
+     </div>`
+}
     <div class="spray-timeline">${scheduleHTML}</div>
     ${precautionsHTML ? `
     <div class="spray-precautions">

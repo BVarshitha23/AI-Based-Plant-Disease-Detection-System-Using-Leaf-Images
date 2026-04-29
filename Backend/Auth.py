@@ -1,4 +1,5 @@
 import random
+import re
 import smtplib
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
@@ -311,6 +312,12 @@ def reset_password(body: ResetPasswordRequest):
         raise HTTPException(status_code=400, detail="Invalid OTP")
     if len(body.password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
+    if not re.search(r'[A-Z]', body.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not re.search(r'[0-9]', body.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one number")
+    if not re.search(r'[^a-zA-Z0-9]', body.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one special character")
 
     hashed = bcrypt.hashpw(body.password.encode(), bcrypt.gensalt()).decode()
 

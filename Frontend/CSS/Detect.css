@@ -1381,7 +1381,7 @@ body {
   .res-card.sev-card .sev-bar-bg     { grid-column: 2; grid-row: 3; align-self: center; margin-bottom: 0; }
   .res-card.sev-card .sev-stages     { grid-column: 1 / -1; margin-top: 14px; }
 }
-/* ── SOIL ROW & LOCATION STATUS ───────────────────────────────────────────── */
+/*  SOIL ROW & LOCATION STATUS  */
 .soil-row {
   display: flex;
   flex-direction: column;
@@ -1418,7 +1418,7 @@ body {
 .location-status.ok { color: #2e7d32; font-style: normal; font-weight: 600; }
 .location-status.err { color: #c62828; font-style: normal; }
 
-/* ── WEATHER CONTEXT CARD ─────────────────────────────────────────────────── */
+/* WEATHER CONTEXT CARD  */
 .weather-card {
   background: var(--card-bg, #fff);
   border: 1.5px solid #e3f2fd;
@@ -1518,7 +1518,7 @@ body {
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ── TWO-COLUMN SOIL/IRRIGATION ROW ─────────────────────────────────────────*/
+/* TWO-COLUMN SOIL/IRRIGATION ROW */
 .soil-inputs-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1541,12 +1541,10 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   .soil-inputs-row { grid-template-columns: 1fr; }
 }
 
-/* ── WEATHER CARD — crop stage + season pill ─────────────────────────────────*/
+/* WEATHER CARD — crop stage + season pill */
 .wcp.teal { background: #e0f2f1; border-color: #80cbc4; color: #00695c; }
 
-/* ══════════════════════════════════════════════════════════
-   UNIFIED ANALYSIS CARD
-══════════════════════════════════════════════════════════ */
+/* UNIFIED ANALYSIS CARD */
 #analysisCard {
   margin: 0;
   padding: 0;
@@ -1838,7 +1836,7 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   font-weight: 600;
   font-family: 'Nunito', sans-serif;
 }
-/* ── TREATMENT COST ESTIMATOR ───────────────────────── */
+/*  TREATMENT COST ESTIMATOR  */
 .cost-product-row {
   background: var(--leaf-pale, #f1f8e9);
   border: 1.5px solid var(--leaf, #2e7d32);
@@ -1900,7 +1898,7 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   padding: 7px 10px;
 }
 
-/* ── SPRAY SCHEDULER ───────────────────────────────── */
+/*  SPRAY SCHEDULER  */
 .spray-loading {
   display: flex;
   align-items: center;
@@ -2005,7 +2003,7 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   margin-top: 6px;
 }
 
-/* ── COST + SPRAY SIDE BY SIDE ───────────────────────── */
+/*  COST + SPRAY SIDE BY SIDE  */
 .cost-spray-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2023,7 +2021,7 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   }
 }
 
-/* ── GROQ AI BADGE ───────────────────────────────────── */
+/*  GROQ AI BADGE  */
 .groq-badge {
   margin-left: auto;
   background: linear-gradient(135deg, #4a90d9, #7c3aed);
@@ -2036,7 +2034,7 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   text-transform: uppercase;
 }
 
-/* ── COST ALT PRODUCT ────────────────────────────────── */
+/*  COST ALT PRODUCT  */
 .cost-alt {
   display: flex;
   align-items: center;
@@ -2050,7 +2048,7 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   margin-bottom: 8px;
 }
 
-/* ── SPRAY NOTES ─────────────────────────────────────── */
+/*  SPRAY NOTES  */
 .spray-notes {
   font-size: 11px;
   font-weight: 600;
@@ -2061,7 +2059,7 @@ input[type="date"].soil-select::-webkit-calendar-picker-indicator {
   margin-top: 4px;
 }
 
-/* ── SPRAY PRECAUTIONS ───────────────────────────────── */
+/*  SPRAY PRECAUTIONS  */
 .spray-precautions {
   background: #f8fafc;
   border: 1.5px solid var(--border, #e8edf0);

@@ -1,7 +1,7 @@
 if (Session.isLoggedIn()) window.location.href = "index.html"; 
 
 document.getElementById("name").addEventListener("input", function () {
-  this.value = this.value.replace(/[^a-zA-Z\s]/g, "");
+  this.value = this.value.replace(/[^a-zA-Z0-9]/g, "");
 });
 
 function checkStrength(val) {
@@ -48,9 +48,9 @@ async function handleRegister(e) {
     document.getElementById(id).classList.remove("show")
   );
 
-  if (!/^[a-zA-Z\s]+$/.test(name)) {
+  if (!/^[a-zA-Z0-9]+$/.test(name)) {
     const nameErr = document.getElementById("nameError");
-    nameErr.textContent = "Name must contain only letters and spaces.";
+    nameErr.textContent = "Name must contain only letters and numbers.";
     nameErr.classList.add("show"); return;
   }
   if (name.length < 2) {

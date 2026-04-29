@@ -122,7 +122,7 @@ async def get_weather(lat: float, lon: float) -> dict:
         }
 
 
-#  SOIL (SoilGrids ISRIC — free, no key needed) 
+#  SOIL (SoilGrids ISRIC) 
 async def get_soil_info(lat: float, lon: float) -> dict:
     try:
         async with httpx.AsyncClient(timeout=8) as client:

@@ -129,8 +129,11 @@ async function resetPassword() {
   const errEl     = document.getElementById("fpError3");
   errEl.style.display = "none";
 
-  if (password.length < 8) { errEl.textContent = "Password must be at least 8 characters."; errEl.style.display = "block"; return; }
-  if (password !== confirm) { errEl.textContent = "Passwords do not match."; errEl.style.display = "block"; return; }
+if (password.length < 8)            { errEl.textContent = "Password must be at least 8 characters.";                    errEl.style.display = "block"; return; }
+if (!/[A-Z]/.test(password))        { errEl.textContent = "Password must contain at least one uppercase letter.";       errEl.style.display = "block"; return; }
+if (!/[0-9]/.test(password))        { errEl.textContent = "Password must contain at least one number.";                 errEl.style.display = "block"; return; }
+if (!/[^a-zA-Z0-9]/.test(password)) { errEl.textContent = "Password must contain at least one special character.";     errEl.style.display = "block"; return; }
+if (password !== confirm)            { errEl.textContent = "Passwords do not match.";                                   errEl.style.display = "block"; return; }
 
   const res  = await fetch("/auth/reset-password", {
     method: "POST",
